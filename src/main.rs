@@ -108,8 +108,15 @@ enum EventKind {
     #[serde(rename = "o")]
     Received,
 
+    #[allow(dead_code)]
     #[serde(rename = "i")]
     Sent,
+}
+
+impl Default for EventKind {
+    fn default() -> Self {
+        EventKind::Received
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -178,7 +185,7 @@ fn main() -> Result<()> {
         &mut stdout,
         &Event(
             start_delay as f64 / 1000.0,
-            EventKind::Received,
+            EventKind::default(),
             String::from("~$ "),
         ),
     )?;
@@ -189,7 +196,7 @@ fn main() -> Result<()> {
             / 1000.0;
         serde_json::to_writer(
             &mut stdout,
-            &Event(char_delay, EventKind::Received, String::from(c)),
+            &Event(char_delay, EventKind::default(), String::from(c)),
         )?;
         writeln!(&mut stdout)?;
     }
@@ -199,7 +206,7 @@ fn main() -> Result<()> {
         if i == 0 {
             serde_json::to_writer(
                 &mut stdout,
-                &Event(show_delay, EventKind::Received, String::from("\r\n")),
+                &Event(show_delay, EventKind::default(), String::from("\r\n")),
             )?;
             writeln!(&mut stdout)?;
         }
@@ -208,7 +215,7 @@ fn main() -> Result<()> {
             output_data.push_str("\r\n");
             serde_json::to_writer(
                 &mut stdout,
-                &Event(show_delay, EventKind::Received, output_data),
+                &Event(show_delay, EventKind::default(), output_data),
             )?;
             writeln!(&mut stdout)?;
         }
