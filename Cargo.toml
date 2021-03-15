@@ -1,0 +1,24 @@
+[package]
+name = "simple-cast-gen"
+version = "0.1.0"
+authors = ["Christopher Field <cfield2@gmail.com>"]
+description = "A Command Line Interface (CLI) application to generate asciinema cast files from input commands and output statements."
+license = "GPL-3.0"
+edition = "2018"
+readme = "README.md"
+repository = "https://github.com/volks73/simple-cast-gen"
+documentation = "https://volks73.github.io/simple-cast-gen"
+categories = ["development-tools"]
+keywords = ["asciinema"]
+homepage = "https://github.com/volks73/simple-cast-gen"
+exclude = ["/.github"]
+
+[[bin]]
+name = "simple-cast-gen"
+
+[dependencies]
+structopt = "0.3"
+
+[badges]
+is-it-maintained-issue-resolution = { repository = "volks73/simple-cast-gen" }
+is-it-maintained-open-issues = { repository = "volks73/simgple-cast-gen" }
