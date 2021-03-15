@@ -169,12 +169,18 @@ fn main() -> Result<()> {
     let start_delay = 0;
     let speed = 1;
     let cmd = "pptx-analyzer pain presentation.pptx";
+    let outputs = vec!["Poor Interoperability\nTime"];
+    let input_time = (DELAY_TYPE_START + DELAY_TYPE_CHAR * cmd.len() + DELAY_TYPE_SUBMIT) / speed;
     let mut stdout = io::stdout();
     serde_json::to_writer(&mut stdout, &Header::default())?;
     writeln!(&mut stdout)?;
     serde_json::to_writer(
         &mut stdout,
-        &Event(0.0, EventKind::Received, String::from("~$ ")),
+        &Event(
+            start_delay as f64 / 1000.0,
+            EventKind::Received,
+            String::from("~$ "),
+        ),
     )?;
     writeln!(&mut stdout)?;
     for (i, c) in cmd.chars().enumerate() {
@@ -186,6 +192,26 @@ fn main() -> Result<()> {
             &Event(char_delay, EventKind::Received, String::from(c)),
         )?;
         writeln!(&mut stdout)?;
+    }
+    for (i, output) in outputs.into_iter().enumerate() {
+        let show_delay =
+            (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
+        if i == 0 {
+            serde_json::to_writer(
+                &mut stdout,
+                &Event(show_delay, EventKind::Received, String::from("\r\n")),
+            )?;
+            writeln!(&mut stdout)?;
+        }
+        for line in output.lines() {
+            let mut output_data = String::from(line);
+            output_data.push_str("\r\n");
+            serde_json::to_writer(
+                &mut stdout,
+                &Event(show_delay, EventKind::Received, output_data),
+            )?;
+            writeln!(&mut stdout)?;
+        }
     }
     Ok(())
 }
