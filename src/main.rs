@@ -3,9 +3,114 @@ use clap_verbosity_flag::Verbosity;
 use env_logger::fmt::Color as LogColor;
 use env_logger::Builder;
 use log::Level;
+use serde::Serialize;
+use serde_json;
+use std::env;
+use std::ffi::OsString;
+use std::io;
 use std::io::Write;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
+
+const VERSION: usize = 2;
+const WIDTH: usize = 188;
+const HEIGHT: usize = 55;
+const SHELL: &str = "/bin/bash";
+const TERM: &str = "xterm-256color";
+
+#[derive(Debug, Serialize)]
+struct Env {
+    #[serde(rename = "SHELL")]
+    shell: String,
+
+    #[serde(rename = "TERM")]
+    term: String,
+}
+
+impl Default for Env {
+    fn default() -> Self {
+        Self {
+            shell: env::var_os("SHELL")
+                .map(|s| String::from(s.to_string_lossy()))
+                .unwrap_or_else(|| String::from(SHELL)),
+            term: env::var_os("TERM")
+                .map(|s| String::from(s.to_string_lossy()))
+                .unwrap_or_else(|| String::from(TERM)),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct Theme {
+    #[serde(rename = "fg")]
+    foreground: String,
+
+    #[serde(rename = "bg")]
+    background: String,
+
+    palette: String,
+}
+
+#[derive(Debug, Serialize)]
+struct Header {
+    version: usize,
+    width: usize,
+    height: usize,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    timestamp: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<f64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    idle_time_limit: Option<f64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    command: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    env: Option<Env>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    theme: Option<Theme>,
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        Self {
+            version: VERSION,
+            width: WIDTH,
+            height: HEIGHT,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .ok()
+                .map(|d| d.as_secs()),
+            duration: None,
+            idle_time_limit: None,
+            command: None,
+            title: None,
+            env: Some(Env::default()),
+            theme: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+enum EventKind {
+    #[serde(rename = "o")]
+    Received,
+
+    #[serde(rename = "i")]
+    Sent,
+}
+
+#[derive(Debug, Serialize)]
+struct Event(f64, EventKind, String);
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciinema cast files without recording")]
@@ -58,6 +163,6 @@ fn main() -> Result<()> {
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
     }
-    println!("{:?}", args);
+    serde_json::to_writer(io::stdout(), &Header::default())?;
     Ok(())
 }
