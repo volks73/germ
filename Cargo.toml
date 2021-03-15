@@ -17,6 +17,10 @@ exclude = ["/.github"]
 name = "simple-cast-gen"
 
 [dependencies]
+anyhow = "1.0"
+clap-verbosity-flag = "0.3"
+env_logger = "0.8"
+log = "0.4"
 structopt = "0.3"
 
 [badges]
