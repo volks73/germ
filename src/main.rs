@@ -17,6 +17,10 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
+const DELAY_TYPE_START: usize = 750;
+const DELAY_TYPE_CHAR: usize = 35;
+const DELAY_TYPE_SUBMIT: usize = 350;
+const DELAY_OUTPUT_LINE: usize = 500;
 
 #[derive(Debug, Serialize)]
 struct Env {
@@ -162,13 +166,26 @@ fn main() -> Result<()> {
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
     }
+    let start_delay = 0;
+    let speed = 1;
+    let cmd = "pptx-analyzer pain presentation.pptx";
     let mut stdout = io::stdout();
     serde_json::to_writer(&mut stdout, &Header::default())?;
     writeln!(&mut stdout)?;
     serde_json::to_writer(
         &mut stdout,
-        &Event(0.0, EventKind::Received, String::from("p")),
+        &Event(0.0, EventKind::Received, String::from("~$ ")),
     )?;
     writeln!(&mut stdout)?;
+    for (i, c) in cmd.chars().enumerate() {
+        let char_delay = (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed)
+            as f64
+            / 1000.0;
+        serde_json::to_writer(
+            &mut stdout,
+            &Event(char_delay, EventKind::Received, String::from(c)),
+        )?;
+        writeln!(&mut stdout)?;
+    }
     Ok(())
 }
