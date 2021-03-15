@@ -169,5 +169,6 @@ fn main() -> Result<()> {
         &mut stdout,
         &Event(0.0, EventKind::Received, String::from("p")),
     )?;
+    writeln!(&mut stdout)?;
     Ok(())
 }
