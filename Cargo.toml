@@ -2,7 +2,7 @@
 name = "simple-cast-gen"
 version = "0.1.0"
 authors = ["Christopher Field <cfield2@gmail.com>"]
-description = "A Command Line Interface (CLI) application to generate asciinema cast files from input commands and output statements."
+description = "Generate asciinema cast files without recording"
 license = "GPL-3.0"
 edition = "2018"
 readme = "README.md"
