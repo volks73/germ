@@ -6,7 +6,6 @@ use log::Level;
 use serde::Serialize;
 use serde_json;
 use std::env;
-use std::ffi::OsString;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
@@ -163,6 +162,12 @@ fn main() -> Result<()> {
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
     }
-    serde_json::to_writer(io::stdout(), &Header::default())?;
+    let mut stdout = io::stdout();
+    serde_json::to_writer(&mut stdout, &Header::default())?;
+    writeln!(&mut stdout)?;
+    serde_json::to_writer(
+        &mut stdout,
+        &Event(0.0, EventKind::Received, String::from("p")),
+    )?;
     Ok(())
 }
