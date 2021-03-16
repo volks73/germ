@@ -203,7 +203,7 @@ struct AsciicastGen {
     #[structopt(short = "", long)]
     stdin: bool,
 
-    /// Speed factor for animation.
+    /// Speed up or slow down the animation by this factor
     #[structopt(short = "s", long = "speed", default_value = "1.0")]
     speed: f64,
 
