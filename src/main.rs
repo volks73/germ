@@ -133,7 +133,7 @@ impl Default for EventKind {
 struct Event<'a>(f64, EventKind, &'a str);
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "Generate asciinema cast files without recording")]
+#[structopt(about = "Generate asciicast files without recording")]
 struct Args {
     #[structopt(flatten)]
     verbose: Verbosity,
@@ -191,7 +191,7 @@ fn main() -> Result<()> {
                 let write_args = writeln!(buf, "{}", record.args());
                 write_level.and(write_args)
             })
-            .filter(Some("simple-cast-gen"), level.to_level_filter())
+            .filter(Some("asciicast-gen"), level.to_level_filter())
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
     }

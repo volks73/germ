@@ -1,20 +1,20 @@
 [package]
-name = "simple-cast-gen"
+name = "asciicast-gen"
 version = "0.1.0"
 authors = ["Christopher Field <cfield2@gmail.com>"]
-description = "Generate asciinema cast files without recording"
+description = "Generate asciicast files without using the asciinema record functionality"
 license = "GPL-3.0"
 edition = "2018"
 readme = "README.md"
-repository = "https://github.com/volks73/simple-cast-gen"
-documentation = "https://volks73.github.io/simple-cast-gen"
+repository = "https://github.com/volks73/asciicast-gen"
+documentation = "https://volks73.github.io/asciicast-gen"
 categories = ["development-tools"]
-keywords = ["asciinema"]
-homepage = "https://github.com/volks73/simple-cast-gen"
+keywords = ["asciinema", "asciicast", "json", "cli", "application"]
+homepage = "https://github.com/volks73/asciicast-gen"
 exclude = ["/.github"]
 
 [[bin]]
-name = "simple-cast-gen"
+name = "asciicast-gen"
 
 [dependencies]
 anyhow = "1.0"
@@ -26,5 +26,5 @@ serde_json = "1"
 structopt = "0.3"
 
 [badges]
-is-it-maintained-issue-resolution = { repository = "volks73/simple-cast-gen" }
-is-it-maintained-open-issues = { repository = "volks73/simgple-cast-gen" }
+is-it-maintained-issue-resolution = { repository = "volks73/asciicast-gen" }
+is-it-maintained-open-issues = { repository = "volks73/asciicast-gen" }
