@@ -194,18 +194,22 @@ fn main() -> Result<()> {
             outputs: args.outputs,
         }])
     }?;
-    let mut stdout = io::stdout();
-    serde_json::to_writer(&mut stdout, &Header::default())?;
-    writeln!(&mut stdout)?;
+    let mut writer: Box<dyn Write> = if let Some(output_file) = args.output_file {
+        Box::new(File::create(output_file)?)
+    } else {
+        Box::new(io::stdout())
+    };
+    serde_json::to_writer(&mut writer, &Header::default())?;
+    writeln!(&mut writer)?;
     serde_json::to_writer(
-        &mut stdout,
+        &mut writer,
         &Event(
             start_delay as f64 / 1000.0,
             EventKind::default(),
             String::from("~$ "),
         ),
     )?;
-    writeln!(&mut stdout)?;
+    writeln!(&mut writer)?;
     for command in commands.into_iter() {
         let input_time =
             (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
@@ -214,29 +218,29 @@ fn main() -> Result<()> {
                 (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed) as f64
                     / 1000.0;
             serde_json::to_writer(
-                &mut stdout,
+                &mut writer,
                 &Event(char_delay, EventKind::default(), String::from(c)),
             )?;
-            writeln!(&mut stdout)?;
+            writeln!(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay =
                 (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
             if i == 0 {
                 serde_json::to_writer(
-                    &mut stdout,
+                    &mut writer,
                     &Event(show_delay, EventKind::default(), String::from("\r\n")),
                 )?;
-                writeln!(&mut stdout)?;
+                writeln!(&mut writer)?;
             }
             for line in output.lines() {
                 let mut output_data = String::from(line);
                 output_data.push_str("\r\n");
                 serde_json::to_writer(
-                    &mut stdout,
+                    &mut writer,
                     &Event(show_delay, EventKind::default(), output_data),
                 )?;
-                writeln!(&mut stdout)?;
+                writeln!(&mut writer)?;
             }
         }
         let outputs_time = if command.outputs.is_empty() {
