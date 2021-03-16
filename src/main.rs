@@ -239,11 +239,11 @@ impl AsciicastGen {
         .to_writer(&mut writer)?;
         let input_time =
             ((DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() as f64 + DELAY_TYPE_SUBMIT)
-                * self.speed)
+                / self.speed)
                 / MILLISECONDS_IN_SECONDS;
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
-                + ((DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64) * self.speed)
+                + ((DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64) / self.speed)
                     / MILLISECONDS_IN_SECONDS;
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
@@ -253,7 +253,7 @@ impl AsciicastGen {
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay = start_delay
                 + input_time
-                + ((DELAY_OUTPUT_LINE * (i + 1) as f64) * self.speed) / MILLISECONDS_IN_SECONDS;
+                + ((DELAY_OUTPUT_LINE * (i + 1) as f64) / self.speed) / MILLISECONDS_IN_SECONDS;
             if i == 0 {
                 Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
@@ -263,7 +263,7 @@ impl AsciicastGen {
                 Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
-        let outputs_time = ((DELAY_OUTPUT_LINE * command.outputs.len() as f64) * self.speed)
+        let outputs_time = ((DELAY_OUTPUT_LINE * command.outputs.len() as f64) / self.speed)
             / MILLISECONDS_IN_SECONDS;
         Ok(start_delay + input_time + outputs_time)
     }
