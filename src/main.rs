@@ -211,6 +211,14 @@ struct AsciicastGen {
     #[structopt(short = "S", long = "start-delay", default_value = "0.0")]
     start_delay: f64,
 
+    /// The number of columns for the terminal.
+    #[structopt(short = "W", long = "width", default_value = "188")]
+    width: usize,
+
+    /// The number of rows for the terminal.
+    #[structopt(short = "H", long = "height", default_value = "55")]
+    height: usize,
+
     /// Input file
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
@@ -245,7 +253,12 @@ impl AsciicastGen {
         } else {
             Box::new(io::stdout())
         };
-        Header::default().to_writer(&mut writer)?;
+        Header {
+            width: self.width,
+            height: self.height,
+            ..Default::default()
+        }
+        .to_writer(&mut writer)?;
         commands
             .iter()
             .try_fold(self.start_delay, |start_delay, command| {
