@@ -14,10 +14,12 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
-const DELAY_TYPE_START: usize = 750;
-const DELAY_TYPE_CHAR: usize = 35;
-const DELAY_TYPE_SUBMIT: usize = 350;
-const DELAY_OUTPUT_LINE: usize = 500;
+const DELAY_TYPE_START: f64 = 750.0;
+const DELAY_TYPE_CHAR: f64 = 35.0;
+const DELAY_TYPE_SUBMIT: f64 = 350.0;
+const DELAY_OUTPUT_LINE: f64 = 500.0;
+
+const MILLISECONDS_IN_SECONDS: f64 = 1000.0;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Command {
@@ -152,7 +154,7 @@ impl<'a> Event<'a> {
 #[derive(Debug)]
 struct Prompt<'a> {
     content: &'a str,
-    start_delay: usize,
+    start_delay: f64,
 }
 
 impl<'a> Prompt<'a> {
@@ -160,12 +162,7 @@ impl<'a> Prompt<'a> {
     where
         W: Write,
     {
-        Event(
-            self.start_delay as f64 / 1000.0,
-            EventKind::default(),
-            self.content,
-        )
-        .to_writer(&mut writer)
+        Event(self.start_delay, EventKind::default(), self.content).to_writer(&mut writer)
     }
 }
 
@@ -181,12 +178,12 @@ struct AsciicastGen {
     stdin: bool,
 
     /// Speed factor for animation.
-    #[structopt(short = "s", long = "speed", default_value = "1")]
-    speed: usize,
+    #[structopt(short = "s", long = "speed", default_value = "1.0")]
+    speed: f64,
 
     /// The delay before starting the animation.
-    #[structopt(short = "S", long = "start-delay", default_value = "0")]
-    start_delay: usize,
+    #[structopt(short = "S", long = "start-delay", default_value = "0.0")]
+    start_delay: f64,
 
     /// Input file
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
@@ -231,12 +228,7 @@ impl AsciicastGen {
         Ok(())
     }
 
-    fn write_command<W>(
-        &self,
-        command: &Command,
-        start_delay: usize,
-        mut writer: W,
-    ) -> Result<usize>
+    fn write_command<W>(&self, command: &Command, start_delay: f64, mut writer: W) -> Result<f64>
     where
         W: Write,
     {
@@ -246,22 +238,22 @@ impl AsciicastGen {
         }
         .to_writer(&mut writer)?;
         let input_time =
-            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT)
-                / self.speed;
+            ((DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() as f64 + DELAY_TYPE_SUBMIT)
+                * self.speed)
+                / MILLISECONDS_IN_SECONDS;
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
-            let char_delay = (start_delay
-                + DELAY_TYPE_START / self.speed
-                + (DELAY_TYPE_CHAR * i) / self.speed) as f64
-                / 1000.0;
+            let char_delay = start_delay
+                + ((DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64) * self.speed)
+                    / MILLISECONDS_IN_SECONDS;
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
             Event(char_delay, EventKind::default(), &c).to_writer(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
-            let show_delay = (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / self.speed)
-                as f64
-                / 1000.0;
+            let show_delay = start_delay
+                + input_time
+                + ((DELAY_OUTPUT_LINE * (i + 1) as f64) * self.speed) / MILLISECONDS_IN_SECONDS;
             if i == 0 {
                 Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
@@ -271,7 +263,8 @@ impl AsciicastGen {
                 Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
-        let outputs_time = (DELAY_OUTPUT_LINE * command.outputs.len()) / self.speed;
+        let outputs_time = ((DELAY_OUTPUT_LINE * command.outputs.len() as f64) * self.speed)
+            / MILLISECONDS_IN_SECONDS;
         Ok(start_delay + input_time + outputs_time)
     }
 }
