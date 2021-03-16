@@ -89,7 +89,7 @@ struct Theme {
 }
 
 #[derive(Debug, Serialize)]
-struct Header {
+struct Header<'a> {
     version: usize,
     width: usize,
     height: usize,
@@ -107,7 +107,7 @@ struct Header {
     command: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<String>,
+    title: Option<&'a str>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     env: Option<Env>,
@@ -116,7 +116,7 @@ struct Header {
     theme: Option<Theme>,
 }
 
-impl Header {
+impl<'a> Header<'a> {
     pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
     where
         W: Write,
@@ -127,7 +127,7 @@ impl Header {
     }
 }
 
-impl Default for Header {
+impl<'a> Default for Header<'a> {
     fn default() -> Self {
         Self {
             version: VERSION,
@@ -203,7 +203,7 @@ struct AsciicastGen {
     #[structopt(short = "", long)]
     stdin: bool,
 
-    /// Speed up or slow down the animation by this factor
+    /// Speed up or slow down the animation by this factor.
     #[structopt(short = "s", long = "speed", default_value = "1.0")]
     speed: f64,
 
@@ -219,11 +219,15 @@ struct AsciicastGen {
     #[structopt(short = "H", long = "height", default_value = "55")]
     height: usize,
 
-    /// Input file
+    /// The title for the asciicast file.
+    #[structopt(short = "T", long = "title")]
+    title: Option<String>,
+
+    /// Input file, the <INPUT> and <OUTPUTS> arguments if not present.
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
 
-    /// Output file, stdout if not present
+    /// Output file, stdout if not present.
     #[structopt(short = "o", long = "output", value_name("FILE"), parse(from_os_str))]
     output_file: Option<PathBuf>,
 
@@ -256,6 +260,7 @@ impl AsciicastGen {
         Header {
             width: self.width,
             height: self.height,
+            title: self.title.as_deref(),
             ..Default::default()
         }
         .to_writer(&mut writer)?;
