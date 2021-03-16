@@ -271,11 +271,7 @@ impl AsciicastGen {
                 Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
-        let outputs_time = if command.outputs.is_empty() {
-            0
-        } else {
-            (DELAY_OUTPUT_LINE * command.outputs.len()) / self.speed
-        };
+        let outputs_time = (DELAY_OUTPUT_LINE * command.outputs.len()) / self.speed;
         Ok(start_delay + input_time + outputs_time)
     }
 }
