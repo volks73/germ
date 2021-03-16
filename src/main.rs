@@ -138,6 +138,10 @@ struct Args {
     #[structopt(flatten)]
     verbose: Verbosity,
 
+    /// Mimic keypress logging functionality
+    #[structopt(short, long)]
+    stdin: bool,
+
     /// Input file
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
@@ -218,14 +222,15 @@ fn main() -> Result<()> {
         write_prompt(&mut writer, PROMPT, start_delay)?;
         let input_time =
             (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
-        for (i, c) in command.input.chars().enumerate() {
+        for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay =
                 (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed) as f64
                     / 1000.0;
-            serde_json::to_writer(
-                &mut writer,
-                &Event(char_delay, EventKind::default(), &c.to_string()),
-            )?;
+            if args.stdin {
+                serde_json::to_writer(&mut writer, &Event(char_delay, EventKind::Keypress, &c))?;
+                writeln!(&mut writer)?;
+            }
+            serde_json::to_writer(&mut writer, &Event(char_delay, EventKind::default(), &c))?;
             writeln!(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
