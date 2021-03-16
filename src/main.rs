@@ -18,6 +18,7 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
+const PROMPT: &str = "~$ ";
 const DELAY_TYPE_START: usize = 750;
 const DELAY_TYPE_CHAR: usize = 35;
 const DELAY_TYPE_SUBMIT: usize = 350;
@@ -129,7 +130,7 @@ impl Default for EventKind {
 }
 
 #[derive(Debug, Serialize)]
-struct Event(f64, EventKind, String);
+struct Event<'a>(f64, EventKind, &'a str);
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciinema cast files without recording")]
@@ -152,6 +153,18 @@ struct Args {
     /// Output from input command
     #[structopt(min_values = 1)]
     outputs: Vec<String>,
+}
+
+fn write_prompt<W>(mut writer: W, prompt: &str, start_delay: usize) -> Result<()>
+where
+    W: Write,
+{
+    serde_json::to_writer(
+        &mut writer,
+        &Event(start_delay as f64 / 1000.0, EventKind::default(), prompt),
+    )?;
+    writeln!(&mut writer)?;
+    Ok(())
 }
 
 fn main() -> Result<()> {
@@ -201,16 +214,8 @@ fn main() -> Result<()> {
     };
     serde_json::to_writer(&mut writer, &Header::default())?;
     writeln!(&mut writer)?;
-    serde_json::to_writer(
-        &mut writer,
-        &Event(
-            start_delay as f64 / 1000.0,
-            EventKind::default(),
-            String::from("~$ "),
-        ),
-    )?;
-    writeln!(&mut writer)?;
-    for command in commands.into_iter() {
+    for command in commands.iter() {
+        write_prompt(&mut writer, PROMPT, start_delay)?;
         let input_time =
             (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
         for (i, c) in command.input.chars().enumerate() {
@@ -219,7 +224,7 @@ fn main() -> Result<()> {
                     / 1000.0;
             serde_json::to_writer(
                 &mut writer,
-                &Event(char_delay, EventKind::default(), String::from(c)),
+                &Event(char_delay, EventKind::default(), &c.to_string()),
             )?;
             writeln!(&mut writer)?;
         }
@@ -229,7 +234,7 @@ fn main() -> Result<()> {
             if i == 0 {
                 serde_json::to_writer(
                     &mut writer,
-                    &Event(show_delay, EventKind::default(), String::from("\r\n")),
+                    &Event(show_delay, EventKind::default(), "\r\n"),
                 )?;
                 writeln!(&mut writer)?;
             }
@@ -238,7 +243,7 @@ fn main() -> Result<()> {
                 output_data.push_str("\r\n");
                 serde_json::to_writer(
                     &mut writer,
-                    &Event(show_delay, EventKind::default(), output_data),
+                    &Event(show_delay, EventKind::default(), &output_data),
                 )?;
                 writeln!(&mut writer)?;
             }
