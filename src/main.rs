@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap_verbosity_flag::Verbosity;
-use colorful::{Color, Colorful};
 use env_logger::fmt::Color as LogColor;
 use env_logger::Builder;
 use log::Level;
@@ -169,11 +168,7 @@ where
 {
     serde_json::to_writer(
         &mut writer,
-        &Event(
-            start_delay as f64 / 1000.0,
-            EventKind::default(),
-            &format!("{}", prompt.color(Color::Blue)),
-        ),
+        &Event(start_delay as f64 / 1000.0, EventKind::default(), prompt),
     )?;
     writeln!(&mut writer)?;
     Ok(())
