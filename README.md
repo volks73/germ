@@ -23,12 +23,12 @@ This is all possible because of the excellent documentation, support, and openne
 
 Start a terminal and then execute the following commands:
 
-```bash
-~$ simple-cast-gen "echo 'Hello World'" "Hello World"
-
+``` sh
+~$ simple-cast-gen "echo 'Hello World'" "Hello World" > tmp.cast
+~$ asciinema play tmp.cast
+~$ echo 'Hello World'
+Hello World
 ```
-
-The [asciinema] cast file will be available in the current working directory (cwd).
 
 [asciinema]: https://asciinema.org/
 
@@ -42,7 +42,7 @@ See the [Releases] page for pre-built binaries and distributions.
 
 ### Source
 
-```sh
+``` sh
 ~$ git clone https://github.com/volks73/simple-cast-gen.git
 ~$ cd simple-cast-gen
 ~/simple-cast-gen$ cargo build --release
@@ -51,15 +51,36 @@ See the [Releases] page for pre-built binaries and distributions.
 
 ### Crates.io
 
-```sh
+``` sh
 ~$ cargo install simple-cast-gen
 ```
 
 ## Usage
 
-```sh
+``` sh
 ~$ simple-cast-gen "echo 'Hello World!'" "Hello World!"
-TODO: Add STDOUT of JSON cast file that is generated
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","~$ "]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
 ```
 
 ``` sh
