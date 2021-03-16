@@ -88,6 +88,17 @@ struct Header {
     theme: Option<Theme>,
 }
 
+impl Header {
+    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: Write,
+    {
+        serde_json::to_writer(&mut writer, self)?;
+        writeln!(&mut writer)?;
+        Ok(())
+    }
+}
+
 impl Default for Header {
     fn default() -> Self {
         Self {
@@ -127,6 +138,37 @@ impl Default for EventKind {
 #[derive(Debug, Serialize)]
 struct Event<'a>(f64, EventKind, &'a str);
 
+impl<'a> Event<'a> {
+    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: Write,
+    {
+        serde_json::to_writer(&mut writer, self)?;
+        writeln!(&mut writer)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct Prompt<'a> {
+    content: &'a str,
+    start_delay: usize,
+}
+
+impl<'a> Prompt<'a> {
+    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: Write,
+    {
+        Event(
+            self.start_delay as f64 / 1000.0,
+            EventKind::default(),
+            self.content,
+        )
+        .to_writer(&mut writer)
+    }
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
 struct AsciicastGen {
@@ -155,18 +197,6 @@ struct AsciicastGen {
     outputs: Vec<String>,
 }
 
-fn write_prompt<W>(mut writer: W, prompt: &str, start_delay: usize) -> Result<()>
-where
-    W: Write,
-{
-    serde_json::to_writer(
-        &mut writer,
-        &Event(start_delay as f64 / 1000.0, EventKind::default(), prompt),
-    )?;
-    writeln!(&mut writer)?;
-    Ok(())
-}
-
 fn main() -> Result<()> {
     let args = AsciicastGen::from_args();
     let mut start_delay = 0;
@@ -186,10 +216,13 @@ fn main() -> Result<()> {
     } else {
         Box::new(io::stdout())
     };
-    serde_json::to_writer(&mut writer, &Header::default())?;
-    writeln!(&mut writer)?;
+    Header::default().to_writer(&mut writer)?;
     for command in commands.iter() {
-        write_prompt(&mut writer, &args.prompt, start_delay)?;
+        Prompt {
+            content: &args.prompt,
+            start_delay,
+        }
+        .to_writer(&mut writer)?;
         let input_time =
             (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
@@ -197,30 +230,20 @@ fn main() -> Result<()> {
                 (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed) as f64
                     / 1000.0;
             if args.stdin {
-                serde_json::to_writer(&mut writer, &Event(char_delay, EventKind::Keypress, &c))?;
-                writeln!(&mut writer)?;
+                Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
-            serde_json::to_writer(&mut writer, &Event(char_delay, EventKind::default(), &c))?;
-            writeln!(&mut writer)?;
+            Event(char_delay, EventKind::default(), &c).to_writer(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay =
                 (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
             if i == 0 {
-                serde_json::to_writer(
-                    &mut writer,
-                    &Event(show_delay, EventKind::default(), "\r\n"),
-                )?;
-                writeln!(&mut writer)?;
+                Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
             for line in output.lines() {
                 let mut output_data = String::from(line);
                 output_data.push_str("\r\n");
-                serde_json::to_writer(
-                    &mut writer,
-                    &Event(show_delay, EventKind::default(), &output_data),
-                )?;
-                writeln!(&mut writer)?;
+                Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
         let outputs_time = if command.outputs.is_empty() {
