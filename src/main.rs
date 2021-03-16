@@ -17,6 +17,7 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
+const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 
 trait ApplySpeed {
     type Output;
@@ -32,17 +33,23 @@ impl ApplySpeed for f64 {
     }
 }
 
-trait ConvertToSeconds {
+trait SecondsConversions {
     type Output;
 
     fn to_seconds(self) -> Self::Output;
+
+    fn to_milliseconds(self) -> Self::Output;
 }
 
-impl ConvertToSeconds for f64 {
+impl SecondsConversions for f64 {
     type Output = Self;
 
     fn to_seconds(self) -> Self::Output {
-        self / 1000.0
+        self / MILLISECONDS_IN_A_SECOND
+    }
+
+    fn to_milliseconds(self) -> Self::Output {
+        self * MILLISECONDS_IN_A_SECOND
     }
 }
 
@@ -75,8 +82,6 @@ impl Default for Commands {
 #[derive(Debug, Deserialize, Serialize)]
 struct Command {
     input: String,
-
-    #[serde(rename = "output")]
     outputs: Vec<String>,
 }
 
@@ -217,28 +222,50 @@ impl<'a> Prompt<'a> {
     }
 }
 
+#[derive(Debug)]
+struct Hold {
+    duration: f64,
+    start_delay: f64,
+}
+
+impl Hold {
+    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: Write,
+    {
+        Event(self.start_delay + self.duration, EventKind::default(), "").to_writer(&mut writer)
+    }
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
 struct AsciicastGen {
     /// The delay before starting the simulated typing for the command.
-    #[structopt(short = "", long, default_value = "750", value_name = "MSECS")]
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(short = "", long, default_value = "750", value_name = "ms")]
     delay_type_start: usize,
 
     /// The delay between simulating typing of characters for the command.
-    #[structopt(short = "", long, default_value = "35", value_name = "MSECS")]
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(short = "", long, default_value = "35", value_name = "ms")]
     delay_type_char: usize,
 
-    /// The delay between completing the simulated typing of the characters and
-    /// starting the output printing.
-    #[structopt(short = "", long, default_value = "350", value_name = "MSECS")]
+    /// The delay between the simulated typing and output printing.
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(short = "", long, default_value = "350", value_name = "ms")]
     delay_type_submit: usize,
 
     /// The delay between outputs for the command.
-    #[structopt(short = "", long, default_value = "500", value_name = "MSECS")]
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(short = "", long, default_value = "500", value_name = "ms")]
     delay_output_line: usize,
 
     /// The prompt to display before the command.
-    #[structopt(short = "p", long = "prompt", default_value = "~$ ")]
+    #[structopt(short = "p", long, default_value = "~$ ")]
     prompt: String,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
@@ -246,20 +273,34 @@ struct AsciicastGen {
     stdin: bool,
 
     /// Speed up or slow down the animation by this factor.
-    #[structopt(short = "s", long = "speed", default_value = "1.0")]
+    #[structopt(short = "s", long, default_value = "1.0", value_name = "float")]
     speed: f64,
 
-    /// The delay before starting the animation.
-    #[structopt(short = "S", long = "start-delay", default_value = "0.0")]
-    start_delay: f64,
-
     /// The number of columns for the terminal.
-    #[structopt(short = "W", long = "width", default_value = "188")]
+    #[structopt(short = "W", long, default_value = "188", value_name = "cols")]
     width: usize,
 
     /// The number of rows for the terminal.
-    #[structopt(short = "H", long = "height", default_value = "55")]
+    #[structopt(
+        short = "H",
+        long = "height",
+        default_value = "55",
+        value_name = "rows"
+    )]
     height: usize,
+
+    /// The delay before starting the animation.
+    ///
+    /// The units are in seconds (s).
+    #[structopt(short = "B", long, default_value = "0.0", value_name = "secs")]
+    begin_delay: f64,
+
+    /// The delay at the end of the animation.
+    ///
+    /// This is useful when looping/repeat is enabled and some time between
+    /// iterations is needed and/or desired. The units are in seconds (s).
+    #[structopt(short = "E", long, default_value = "2.0", value_name = "secs")]
+    end_delay: f64,
 
     /// The title for the asciicast file.
     #[structopt(short = "T", long = "title")]
@@ -272,13 +313,13 @@ struct AsciicastGen {
     /// Input file in the commands JSON format.
     ///
     /// If not present, then stdin if it is piped or redirected.
-    #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
+    #[structopt(short = "i", long = "input", value_name("file"), parse(from_os_str))]
     input_file: Option<PathBuf>,
 
     /// Output file, stdout if not present.
     ///
     /// This is useful if using the application in interactive mode.
-    #[structopt(short = "o", long = "output", value_name("FILE"), parse(from_os_str))]
+    #[structopt(short = "o", long = "output", value_name("file"), parse(from_os_str))]
     output_file: Option<PathBuf>,
 
     /// The command entered at the prompt.
@@ -355,11 +396,18 @@ impl AsciicastGen {
                 ..Default::default()
             }
             .to_writer(&mut writer)?;
-            commands
+            let start_delay = commands
                 .iter()
-                .try_fold(self.start_delay, |start_delay, command| {
+                .try_fold(self.begin_delay, |start_delay, command| {
                     self.write_command(command, start_delay, &mut writer)
                 })?;
+            if self.end_delay.to_milliseconds() as usize != 0 {
+                Hold {
+                    duration: self.end_delay,
+                    start_delay,
+                }
+                .to_writer(&mut writer)?;
+            }
         }
         Ok(())
     }
