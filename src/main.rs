@@ -116,16 +116,16 @@ impl Default for Header {
 #[derive(Debug, Serialize)]
 enum EventKind {
     #[serde(rename = "o")]
-    Received,
+    Printed,
 
     #[allow(dead_code)]
     #[serde(rename = "i")]
-    Sent,
+    Keypress,
 }
 
 impl Default for EventKind {
     fn default() -> Self {
-        EventKind::Received
+        EventKind::Printed
     }
 }
 
@@ -133,7 +133,7 @@ impl Default for EventKind {
 struct Event<'a>(f64, EventKind, &'a str);
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "Generate asciicast files without recording")]
+#[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
 struct Args {
     #[structopt(flatten)]
     verbose: Verbosity,
