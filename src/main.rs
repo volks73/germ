@@ -17,10 +17,6 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
-const DELAY_TYPE_START: f64 = 750.0;
-const DELAY_TYPE_CHAR: f64 = 35.0;
-const DELAY_TYPE_SUBMIT: f64 = 350.0;
-const DELAY_OUTPUT_LINE: f64 = 500.0;
 
 trait ApplySpeed {
     type Output;
@@ -224,6 +220,23 @@ impl<'a> Prompt<'a> {
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
 struct AsciicastGen {
+    /// The delay before starting the simulated typing for the command.
+    #[structopt(short = "", long, default_value = "750", value_name = "MSECS")]
+    delay_type_start: usize,
+
+    /// The delay between simulating typing of characters for the command.
+    #[structopt(short = "", long, default_value = "35", value_name = "MSECS")]
+    delay_type_char: usize,
+
+    /// The delay between completing the simulated typing of the characters and
+    /// starting the output printing.
+    #[structopt(short = "", long, default_value = "350", value_name = "MSECS")]
+    delay_type_submit: usize,
+
+    /// The delay between outputs for the command.
+    #[structopt(short = "", long, default_value = "500", value_name = "MSECS")]
+    delay_output_line: usize,
+
     /// The prompt to display before the command.
     #[structopt(short = "p", long = "prompt", default_value = "~$ ")]
     prompt: String,
@@ -256,19 +269,29 @@ struct AsciicastGen {
     #[structopt(short = "c", long = "command")]
     use_commands_json: bool,
 
-    /// Input file, the <INPUT> and <OUTPUTS> arguments if not present.
+    /// Input file in the commands JSON format.
+    ///
+    /// If not present, then stdin if it is piped or redirected.
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
 
     /// Output file, stdout if not present.
+    ///
+    /// This is useful if using the application in interactive mode.
     #[structopt(short = "o", long = "output", value_name("FILE"), parse(from_os_str))]
     output_file: Option<PathBuf>,
 
-    /// The command entered at the prompt
+    /// The command entered at the prompt.
+    ///
+    /// If not present and the -i,--input option is not used, then the
+    /// application enters an interactive mode where commands are manually
+    /// entered one at a time within the terminal.
     #[structopt(requires("outputs"))]
     input: Option<String>,
 
-    /// Output from the command
+    /// Output from the command.
+    ///
+    /// A command can have multiple output.
     #[structopt(min_values = 1)]
     outputs: Vec<String>,
 }
@@ -350,13 +373,14 @@ impl AsciicastGen {
             start_delay,
         }
         .to_writer(&mut writer)?;
-        let input_time =
-            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() as f64 + DELAY_TYPE_SUBMIT)
-                .speed(self.speed)
-                .to_seconds();
+        let input_time = ((self.delay_type_start
+            + self.delay_type_char * command.input.len()
+            + self.delay_type_submit) as f64)
+            .speed(self.speed)
+            .to_seconds();
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
-                + (DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64)
+                + ((self.delay_type_start + self.delay_type_char * i) as f64)
                     .speed(self.speed)
                     .to_seconds();
             if self.stdin {
@@ -367,7 +391,7 @@ impl AsciicastGen {
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay = start_delay
                 + input_time
-                + (DELAY_OUTPUT_LINE * (i + 1) as f64)
+                + ((self.delay_output_line * (i + 1)) as f64)
                     .speed(self.speed)
                     .to_seconds();
             if i == 0 {
@@ -379,7 +403,7 @@ impl AsciicastGen {
                 Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
-        let outputs_time = (DELAY_OUTPUT_LINE * command.outputs.len() as f64)
+        let outputs_time = ((self.delay_output_line * command.outputs.len()) as f64)
             .speed(self.speed)
             .to_seconds();
         Ok(start_delay + input_time + outputs_time)
