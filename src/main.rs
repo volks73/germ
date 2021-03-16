@@ -251,7 +251,7 @@ struct AsciicastGen {
 
     /// Use the commands JSON format for the output instead of the asciicast format.
     #[structopt(short = "c", long = "command")]
-    use_command_json: bool,
+    use_commands_json: bool,
 
     /// Input file, the <INPUT> and <OUTPUTS> arguments if not present.
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
@@ -290,18 +290,22 @@ impl AsciicastGen {
         } else {
             Box::new(io::stdout())
         };
-        Header {
-            width: self.width,
-            height: self.height,
-            title: self.title.as_deref(),
-            ..Default::default()
+        if self.use_commands_json {
+            serde_json::to_writer(&mut writer, &commands)?;
+        } else {
+            Header {
+                width: self.width,
+                height: self.height,
+                title: self.title.as_deref(),
+                ..Default::default()
+            }
+            .to_writer(&mut writer)?;
+            commands
+                .iter()
+                .try_fold(self.start_delay, |start_delay, command| {
+                    self.write_command(command, start_delay, &mut writer)
+                })?;
         }
-        .to_writer(&mut writer)?;
-        commands
-            .iter()
-            .try_fold(self.start_delay, |start_delay, command| {
-                self.write_command(command, start_delay, &mut writer)
-            })?;
         Ok(())
     }
 
