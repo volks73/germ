@@ -180,6 +180,12 @@ struct AsciicastGen {
     #[structopt(short, long)]
     stdin: bool,
 
+    #[structopt(short = "s", long = "speed")]
+    speed: usize,
+
+    #[structopt(short = "S", long = "start-delay", default_value = "0")]
+    start_delay: usize,
+
     /// Input file
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
@@ -197,46 +203,63 @@ struct AsciicastGen {
     outputs: Vec<String>,
 }
 
-fn main() -> Result<()> {
-    let args = AsciicastGen::from_args();
-    let mut start_delay = 0;
-    let speed = 1;
-    let commands: Vec<Command> = if let Some(input_file) = args.input_file {
-        let file = File::open(input_file)?;
-        let reader = BufReader::new(file);
-        serde_json::from_reader(reader)
-    } else {
-        Ok(vec![Command {
-            input: args.input.expect("Input positional argument"),
-            outputs: args.outputs,
-        }])
-    }?;
-    let mut writer: Box<dyn Write> = if let Some(output_file) = args.output_file {
-        Box::new(File::create(output_file)?)
-    } else {
-        Box::new(io::stdout())
-    };
-    Header::default().to_writer(&mut writer)?;
-    for command in commands.iter() {
+impl AsciicastGen {
+    pub fn execute(self) -> Result<()> {
+        let commands: Vec<Command> = if let Some(input_file) = &self.input_file {
+            let file = File::open(input_file)?;
+            let reader = BufReader::new(file);
+            serde_json::from_reader(reader)
+        } else {
+            Ok(vec![Command {
+                input: self.input.clone().expect("Input positional argument"),
+                outputs: self.outputs.clone(),
+            }])
+        }?;
+        let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
+            Box::new(File::create(output_file)?)
+        } else {
+            Box::new(io::stdout())
+        };
+        Header::default().to_writer(&mut writer)?;
+        commands
+            .iter()
+            .try_fold(self.start_delay, |start_delay, command| {
+                self.write_command(command, start_delay, &mut writer)
+            })?;
+        Ok(())
+    }
+
+    fn write_command<W>(
+        &self,
+        command: &Command,
+        start_delay: usize,
+        mut writer: W,
+    ) -> Result<usize>
+    where
+        W: Write,
+    {
         Prompt {
-            content: &args.prompt,
+            content: &self.prompt,
             start_delay,
         }
         .to_writer(&mut writer)?;
         let input_time =
-            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
+            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT)
+                / self.speed;
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
-            let char_delay =
-                (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed) as f64
-                    / 1000.0;
-            if args.stdin {
+            let char_delay = (start_delay
+                + DELAY_TYPE_START / self.speed
+                + (DELAY_TYPE_CHAR * i) / self.speed) as f64
+                / 1000.0;
+            if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
             Event(char_delay, EventKind::default(), &c).to_writer(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
-            let show_delay =
-                (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
+            let show_delay = (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / self.speed)
+                as f64
+                / 1000.0;
             if i == 0 {
                 Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
@@ -249,9 +272,12 @@ fn main() -> Result<()> {
         let outputs_time = if command.outputs.is_empty() {
             0
         } else {
-            (DELAY_OUTPUT_LINE * command.outputs.len()) / speed
+            (DELAY_OUTPUT_LINE * command.outputs.len()) / self.speed
         };
-        start_delay = start_delay + input_time + outputs_time;
+        Ok(start_delay + input_time + outputs_time)
     }
-    Ok(())
+}
+
+fn main() -> Result<()> {
+    AsciicastGen::from_args().execute()
 }
