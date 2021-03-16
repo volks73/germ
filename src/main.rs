@@ -177,10 +177,10 @@ struct AsciicastGen {
     prompt: String,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
-    #[structopt(short, long)]
+    #[structopt(short = "", long)]
     stdin: bool,
 
-    #[structopt(short = "s", long = "speed")]
+    #[structopt(short = "s", long = "speed", default_value = "1")]
     speed: usize,
 
     #[structopt(short = "S", long = "start-delay", default_value = "0")]
