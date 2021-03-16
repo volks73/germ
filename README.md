@@ -86,11 +86,59 @@ See the [Releases] page for pre-built binaries and distributions.
 
 ``` sh
 ~$ asciicast-gen -c "echo 'Hello World'" "Hello World" | asciicast-gen -c "echo 'Hello World Again'" "Hello World Again" | asciicast-gen
-TODO: Add STDOUT of JSON cast file that is generated
+{"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","~$ "]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
+[2.23,"o","~$ "]
+[2.98,"o","e"]
+[3.015,"o","c"]
+[3.05,"o","h"]
+[3.085,"o","o"]
+[3.12,"o"," "]
+[3.1550000000000002,"o","'"]
+[3.19,"o","H"]
+[3.225,"o","e"]
+[3.26,"o","l"]
+[3.295,"o","l"]
+[3.33,"o","o"]
+[3.365,"o"," "]
+[3.4,"o","W"]
+[3.435,"o","o"]
+[3.4699999999999998,"o","r"]
+[3.505,"o","l"]
+[3.54,"o","d"]
+[3.575,"o"," "]
+[3.61,"o","A"]
+[3.645,"o","g"]
+[3.6799999999999997,"o","a"]
+[3.715,"o","i"]
+[3.75,"o","n"]
+[3.785,"o","'"]
+[4.67,"o","\r\n"]
+[4.67,"o","Hello World Again\r\n"]
 ```
 
 ``` sh
-~$ cat commands.json
+~$ asciicast-gen -c "echo 'Hello World'" "Hello World"
 {
     "version": 1,
     "commands": [
@@ -98,18 +146,78 @@ TODO: Add STDOUT of JSON cast file that is generated
             "input": "echo 'Hello World'",
             "output": ["Hello World"],
         },
-        {
-            "input": "echo 'Hello World Again'",
-            "output": ["Hello World Again"]
-        }
     ]
 }
+~$ asciicast-gen -c "echo 'Hello World'" "Hello World" > commands.json
 ~$ asciicast-gen < commands.json
-TODO: Add STDOUT of JSON cast file that is generated
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","~$ "]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
 ~$ cat commands.json | asciicast-gen
-TODO: Add STDOUT of JSON cast file that is generated
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","~$ "]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
 ~$ asciicast-gen -i commands.json
-TODO: Add STDOUT of JSON cast file that is generated
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","~$ "]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
 ```
 
 ``` sh
