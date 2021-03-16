@@ -19,7 +19,33 @@ const DELAY_TYPE_CHAR: f64 = 35.0;
 const DELAY_TYPE_SUBMIT: f64 = 350.0;
 const DELAY_OUTPUT_LINE: f64 = 500.0;
 
-const MILLISECONDS_IN_SECONDS: f64 = 1000.0;
+trait ApplySpeed {
+    type Output;
+
+    fn speed(self, speed: f64) -> Self::Output;
+}
+
+impl ApplySpeed for f64 {
+    type Output = Self;
+
+    fn speed(self, speed: f64) -> Self::Output {
+        self / speed
+    }
+}
+
+trait ConvertToSeconds {
+    type Output;
+
+    fn to_seconds(self) -> Self::Output;
+}
+
+impl ConvertToSeconds for f64 {
+    type Output = Self;
+
+    fn to_seconds(self) -> Self::Output {
+        self / 1000.0
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Command {
@@ -238,13 +264,14 @@ impl AsciicastGen {
         }
         .to_writer(&mut writer)?;
         let input_time =
-            ((DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() as f64 + DELAY_TYPE_SUBMIT)
-                / self.speed)
-                / MILLISECONDS_IN_SECONDS;
+            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() as f64 + DELAY_TYPE_SUBMIT)
+                .speed(self.speed)
+                .to_seconds();
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
-                + ((DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64) / self.speed)
-                    / MILLISECONDS_IN_SECONDS;
+                + (DELAY_TYPE_START + DELAY_TYPE_CHAR * i as f64)
+                    .speed(self.speed)
+                    .to_seconds();
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
@@ -253,7 +280,9 @@ impl AsciicastGen {
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay = start_delay
                 + input_time
-                + ((DELAY_OUTPUT_LINE * (i + 1) as f64) / self.speed) / MILLISECONDS_IN_SECONDS;
+                + (DELAY_OUTPUT_LINE * (i + 1) as f64)
+                    .speed(self.speed)
+                    .to_seconds();
             if i == 0 {
                 Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
@@ -263,8 +292,9 @@ impl AsciicastGen {
                 Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
             }
         }
-        let outputs_time = ((DELAY_OUTPUT_LINE * command.outputs.len() as f64) / self.speed)
-            / MILLISECONDS_IN_SECONDS;
+        let outputs_time = (DELAY_OUTPUT_LINE * command.outputs.len() as f64)
+            .speed(self.speed)
+            .to_seconds();
         Ok(start_delay + input_time + outputs_time)
     }
 }
