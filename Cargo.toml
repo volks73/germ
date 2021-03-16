@@ -18,6 +18,7 @@ name = "asciicast-gen"
 
 [dependencies]
 anyhow = "1.0"
+atty = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 structopt = "0.3"

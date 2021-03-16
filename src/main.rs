@@ -1,4 +1,5 @@
 use anyhow::Result;
+use atty::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::env;
@@ -59,7 +60,7 @@ impl Commands {
         self.commands.iter()
     }
 
-    fn append(&mut self, command: Command) -> &mut Self {
+    fn add(&mut self, command: Command) -> &mut Self {
         self.commands.push(command);
         self
     }
@@ -273,15 +274,17 @@ struct AsciicastGen {
 
 impl AsciicastGen {
     pub fn execute(self) -> Result<()> {
-        let mut commands: Commands = if let Some(input_file) = &self.input_file {
-            let file = File::open(input_file)?;
-            let reader = BufReader::new(file);
-            serde_json::from_reader(reader)
+        let mut commands = if let Some(input_file) = &self.input_file {
+            serde_json::from_reader(BufReader::new(File::open(input_file)?))
         } else {
-            Ok(Default::default())
+            if atty::is(Stream::Stdin) {
+                Ok(Commands::default())
+            } else {
+                serde_json::from_reader(io::stdin())
+            }
         }?;
         if let Some(input) = self.input.as_ref() {
-            commands.append(Command {
+            commands.add(Command {
                 input: input.clone(),
                 outputs: self.outputs.clone(),
             });
