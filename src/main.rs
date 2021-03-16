@@ -129,7 +129,7 @@ struct Event<'a>(f64, EventKind, &'a str);
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
-struct Args {
+struct AsciicastGen {
     /// The prompt to display before the command.
     #[structopt(short = "p", long = "prompt", default_value = "~$ ")]
     prompt: String,
@@ -168,7 +168,7 @@ where
 }
 
 fn main() -> Result<()> {
-    let args = Args::from_args();
+    let args = AsciicastGen::from_args();
     let mut start_delay = 0;
     let speed = 1;
     let commands: Vec<Command> = if let Some(input_file) = args.input_file {
