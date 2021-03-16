@@ -9,7 +9,8 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
 
-const VERSION: usize = 2;
+const ASCIICAST_VERSION: usize = 2;
+const COMMANDS_VERSION: usize = 1;
 const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
@@ -44,6 +45,27 @@ impl ConvertToSeconds for f64 {
 
     fn to_seconds(self) -> Self::Output {
         self / 1000.0
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Commands {
+    version: usize,
+    commands: Vec<Command>,
+}
+
+impl Commands {
+    fn iter(&self) -> impl Iterator<Item = &Command> {
+        self.commands.iter()
+    }
+}
+
+impl Default for Commands {
+    fn default() -> Self {
+        Self {
+            version: COMMANDS_VERSION,
+            commands: Vec::new(),
+        }
     }
 }
 
@@ -130,7 +152,7 @@ impl<'a> Header<'a> {
 impl<'a> Default for Header<'a> {
     fn default() -> Self {
         Self {
-            version: VERSION,
+            version: ASCIICAST_VERSION,
             width: WIDTH,
             height: HEIGHT,
             timestamp: SystemTime::now()
@@ -223,6 +245,14 @@ struct AsciicastGen {
     #[structopt(short = "T", long = "title")]
     title: Option<String>,
 
+    /// Append to the commands JSON input.
+    #[structopt(short, long)]
+    append: bool,
+
+    /// Use the commands JSON format for the output instead of the asciicast format.
+    #[structopt(short = "c", long = "command")]
+    use_command_json: bool,
+
     /// Input file, the <INPUT> and <OUTPUTS> arguments if not present.
     #[structopt(short = "i", long = "input", value_name("FILE"), parse(from_os_str))]
     input_file: Option<PathBuf>,
@@ -242,15 +272,18 @@ struct AsciicastGen {
 
 impl AsciicastGen {
     pub fn execute(self) -> Result<()> {
-        let commands: Vec<Command> = if let Some(input_file) = &self.input_file {
+        let commands: Commands = if let Some(input_file) = &self.input_file {
             let file = File::open(input_file)?;
             let reader = BufReader::new(file);
             serde_json::from_reader(reader)
         } else {
-            Ok(vec![Command {
-                input: self.input.clone().expect("Input positional argument"),
-                outputs: self.outputs.clone(),
-            }])
+            Ok(Commands {
+                commands: vec![Command {
+                    input: self.input.clone().expect("Input positional argument"),
+                    outputs: self.outputs.clone(),
+                }],
+                ..Default::default()
+            })
         }?;
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)

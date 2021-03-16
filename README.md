@@ -8,10 +8,10 @@ The asciinema application is one of these "Other solutions". Similiarly, I wante
 
 This is all possible because of the excellent documentation, support, and openness of all of the mentioned projects. Thank you!
 
-[![Crates.io](https://img.shields.io/crates/v/simple-cast-gen.svg)](https://crates.io/crates/cargo-wix)
-[![GitHub release](https://img.shields.io/github/release/volks73/simple-cast-gen.svg)](https://github.com/volks73/simple-cast-gen/releases)
-[![Crates.io](https://img.shields.io/crates/l/simple-cast-gen.svg)](https://github.com/volks73/simple-cast-gen#license)
-[![Build Status](https://github.com/volks73/simple-cast-gen/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/simple-cast-gen/actions?query=branch%3main)
+[![Crates.io](https://img.shields.io/crates/v/asciicast-gen.svg)](https://crates.io/crates/cargo-wix)
+[![GitHub release](https://img.shields.io/github/release/volks73/asciicast-gen.svg)](https://github.com/volks73/asciicast-gen/releases)
+[![Crates.io](https://img.shields.io/crates/l/asciicast-gen.svg)](https://github.com/volks73/asciicast-gen#license)
+[![Build Status](https://github.com/volks73/asciicast-gen/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/asciicast-gen/actions?query=branch%3main)
 
 [asciinema]: https://asciinema.org/
 [cast files]: https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
@@ -39,27 +39,27 @@ Hello World
 
 See the [Releases] page for pre-built binaries and distributions.
 
-[Releases]: https://github.com/volks73/simple-cast-gen/releases
+[Releases]: https://github.com/volks73/asciicast-gen/releases
 
 ### Source
 
 ``` sh
-~$ git clone https://github.com/volks73/simple-cast-gen.git
-~$ cd simple-cast-gen
-~/simple-cast-gen$ cargo build --release
-~/simple-cast-gen$ cargo install --path ./
+~$ git clone https://github.com/volks73/asciicast-gen.git
+~$ cd asciicast-gen
+~/asciicast-gen$ cargo build --release
+~/asciicast-gen$ cargo install --path ./
 ```
 
 ### Crates.io
 
 ``` sh
-~$ cargo install simple-cast-gen
+~$ cargo install asciicast-gen
 ```
 
 ## Usage
 
 ``` sh
-~$ simple-cast-gen "echo 'Hello World!'" "Hello World!"
+~$ asciicast-gen "echo 'Hello World'" "Hello World"
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -85,66 +85,42 @@ See the [Releases] page for pre-built binaries and distributions.
 ```
 
 ``` sh
-~$ simple-cast-gen -o example.cast "echo Hello" "Hello"
-~$ simple-cast-gen -a example.cast "echo World!" "World!"
-~$ cat example.cast
-TODO: ADD STDOUT of JSON cast file that is generated
+~$ asciicast-gen -ac "echo 'Hello World'" "Hello World" | asciicast-gen -ac "echo 'Hello World Again'" "Hello World Again" | asciicast-gen
+```
+
+``` sh
+~$ asciicast-gen "ls" "file1" "file2" "file3" "<ENTER>" "echo 'Hello World Again'" "Hello World Again"
 ```
 
 ``` sh
 ~$ cat commands.json
-[
-    {
-        "input": "echo Hello",
-        "output": ["Hello"],
-    },
-    {
-        "input": "echo World!",
-        "output": ["World!"]
-    }
-]
-~$ simple-cast-gen < commands.json
+{
+    "version": 1,
+    "commands": [
+        {
+            "input": "echo 'Hello World'",
+            "output": ["Hello World"],
+        },
+        {
+            "input": "echo 'Hello World Again'",
+            "output": ["Hello World Again"]
+        }
+    ]
+}
+~$ asciicast-gen < commands.json
+TODO: Add STDOUT of JSON cast file that is generated
+~$ cat commands.json | asciicast-gen
+TODO: Add STDOUT of JSON cast file that is generated
+~$ asciicast-gen -i commands.json
 TODO: Add STDOUT of JSON cast file that is generated
 ```
 
 ``` sh
-~$ cat commands.json
-[
-    {
-        "input": "echo Hello",
-        "output": ["Hello"],
-    },
-    {
-        "input": "echo World!",
-        "output": ["World!"]
-    }
-]
-~$ cat commands.json | simple-cast-gen
-TODO: Add STDOUT of JSON cast file that is generated
-```
-
-``` sh
-~$ cat commands.json
-[
-    {
-        "input": "echo Hello",
-        "output": ["Hello"],
-    },
-    {
-        "input": "echo World!",
-        "output": ["World!"]
-    }
-]
-~$ simple-cast-gen -i commands.json
-TODO: Add STDOUT of JSON cast file that is generated
-```
-
-``` sh
-~$ simple-cast-gen -I -o example.cast
-echo "Hello"
-Hello
-echo "World!"
-World!
+~$ asciicast-gen -o example.cast
+echo "Hello World"
+World Hello
+echo "Hello World Again"
+Hello World Again
 ~$ cat example.cast
 TODO: Add STDOUT of JSON cast file that is generated
 ```
@@ -157,7 +133,7 @@ TODO: Add STDOUT of JSON cast file that is generated
 
 ## License
 
-The `simple-cast-gen` project is licensed under either the [GPL-3.0]. See the [LICENSE] file for more information about licensing and copyright.
+The `asciicast-gen` project is licensed under either the [GPL-3.0]. See the [LICENSE] file for more information about licensing and copyright.
 
 [GPL-3.0]: https://opensource.org/licenses/GPL-3.0
-[LICENSE]: https://github.com/volks73/simple-cast-gen/blob/master/LICENSE
+[LICENSE]: https://github.com/volks73/asciicast-gen/blob/master/LICENSE
