@@ -180,9 +180,11 @@ struct AsciicastGen {
     #[structopt(short = "", long)]
     stdin: bool,
 
+    /// Speed factor for animation.
     #[structopt(short = "s", long = "speed", default_value = "1")]
     speed: usize,
 
+    /// The delay before starting the animation.
     #[structopt(short = "S", long = "start-delay", default_value = "0")]
     start_delay: usize,
 
