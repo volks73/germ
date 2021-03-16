@@ -3,11 +3,12 @@ use clap_verbosity_flag::Verbosity;
 use env_logger::fmt::Color as LogColor;
 use env_logger::Builder;
 use log::Level;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::env;
+use std::fs::File;
 use std::io;
-use std::io::Write;
+use std::io::{BufReader, Write};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
@@ -21,6 +22,14 @@ const DELAY_TYPE_START: usize = 750;
 const DELAY_TYPE_CHAR: usize = 35;
 const DELAY_TYPE_SUBMIT: usize = 350;
 const DELAY_OUTPUT_LINE: usize = 500;
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Command {
+    input: String,
+
+    #[serde(rename = "output")]
+    outputs: Vec<String>,
+}
 
 #[derive(Debug, Serialize)]
 struct Env {
@@ -173,11 +182,18 @@ fn main() -> Result<()> {
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
     }
-    let start_delay = 0;
+    let mut start_delay = 0;
     let speed = 1;
-    let cmd = "pptx-analyzer pain presentation.pptx";
-    let outputs = vec!["Poor Interoperability\nTime"];
-    let input_time = (DELAY_TYPE_START + DELAY_TYPE_CHAR * cmd.len() + DELAY_TYPE_SUBMIT) / speed;
+    let commands: Vec<Command> = if let Some(input_file) = args.input_file {
+        let file = File::open(input_file)?;
+        let reader = BufReader::new(file);
+        serde_json::from_reader(reader)
+    } else {
+        Ok(vec![Command {
+            input: args.input.expect("Input positional argument"),
+            outputs: args.outputs,
+        }])
+    }?;
     let mut stdout = io::stdout();
     serde_json::to_writer(&mut stdout, &Header::default())?;
     writeln!(&mut stdout)?;
@@ -190,35 +206,45 @@ fn main() -> Result<()> {
         ),
     )?;
     writeln!(&mut stdout)?;
-    for (i, c) in cmd.chars().enumerate() {
-        let char_delay = (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed)
-            as f64
-            / 1000.0;
-        serde_json::to_writer(
-            &mut stdout,
-            &Event(char_delay, EventKind::default(), String::from(c)),
-        )?;
-        writeln!(&mut stdout)?;
-    }
-    for (i, output) in outputs.into_iter().enumerate() {
-        let show_delay =
-            (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
-        if i == 0 {
+    for command in commands.into_iter() {
+        let input_time =
+            (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
+        for (i, c) in command.input.chars().enumerate() {
+            let char_delay =
+                (start_delay + DELAY_TYPE_START / speed + (DELAY_TYPE_CHAR * i) / speed) as f64
+                    / 1000.0;
             serde_json::to_writer(
                 &mut stdout,
-                &Event(show_delay, EventKind::default(), String::from("\r\n")),
+                &Event(char_delay, EventKind::default(), String::from(c)),
             )?;
             writeln!(&mut stdout)?;
         }
-        for line in output.lines() {
-            let mut output_data = String::from(line);
-            output_data.push_str("\r\n");
-            serde_json::to_writer(
-                &mut stdout,
-                &Event(show_delay, EventKind::default(), output_data),
-            )?;
-            writeln!(&mut stdout)?;
+        for (i, output) in command.outputs.iter().enumerate() {
+            let show_delay =
+                (start_delay + input_time + (DELAY_OUTPUT_LINE * (i + 1)) / speed) as f64 / 1000.0;
+            if i == 0 {
+                serde_json::to_writer(
+                    &mut stdout,
+                    &Event(show_delay, EventKind::default(), String::from("\r\n")),
+                )?;
+                writeln!(&mut stdout)?;
+            }
+            for line in output.lines() {
+                let mut output_data = String::from(line);
+                output_data.push_str("\r\n");
+                serde_json::to_writer(
+                    &mut stdout,
+                    &Event(show_delay, EventKind::default(), output_data),
+                )?;
+                writeln!(&mut stdout)?;
+            }
         }
+        let outputs_time = if command.outputs.is_empty() {
+            0
+        } else {
+            (DELAY_OUTPUT_LINE * command.outputs.len()) / speed
+        };
+        start_delay = start_delay + input_time + outputs_time;
     }
     Ok(())
 }
