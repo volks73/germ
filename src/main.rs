@@ -5,8 +5,9 @@ use serde_json;
 use std::env;
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
+use std::process::{self, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
 
@@ -288,6 +289,33 @@ impl AsciicastGen {
                 input: input.clone(),
                 outputs: self.outputs.clone(),
             });
+        } else {
+            let mut line = String::new();
+            let stdin = io::stdin();
+            let mut stdout = io::stdout();
+            loop {
+                if stdin.lock().read_line(&mut line)? == 0 {
+                    break;
+                } else {
+                    let trimmed_line = line.trim();
+                    let mut child = process::Command::new("sh")
+                        .stdin(Stdio::piped())
+                        .stderr(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .spawn()?;
+                    child
+                        .stdin
+                        .as_mut()
+                        .expect("Child process stdin to be captured")
+                        .write_all(trimmed_line.as_bytes())?;
+                    let output = child.wait_with_output()?;
+                    commands.add(Command {
+                        input: trimmed_line.to_owned(),
+                        outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
+                    });
+                    stdout.write_all(&output.stdout)?;
+                }
+            }
         }
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
