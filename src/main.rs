@@ -280,10 +280,12 @@ impl AsciicastGen {
         } else {
             Ok(Default::default())
         }?;
-        commands.append(Command {
-            input: self.input.clone().expect("Input positional argument"),
-            outputs: self.outputs.clone(),
-        });
+        if let Some(input) = self.input.as_ref() {
+            commands.append(Command {
+                input: input.clone(),
+                outputs: self.outputs.clone(),
+            });
+        }
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
         } else {
