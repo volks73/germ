@@ -298,7 +298,8 @@ struct AsciicastGen {
     /// The delay at the end of the animation.
     ///
     /// This is useful when looping/repeat is enabled and some time between
-    /// iterations is needed and/or desired. The units are in seconds (s).
+    /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
+    /// desired. The units are in seconds (s).
     #[structopt(short = "E", long, default_value = "2.0", value_name = "secs")]
     end_delay: f64,
 
