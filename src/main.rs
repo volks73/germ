@@ -58,6 +58,11 @@ impl Commands {
     fn iter(&self) -> impl Iterator<Item = &Command> {
         self.commands.iter()
     }
+
+    fn append(&mut self, command: Command) -> &mut Self {
+        self.commands.push(command);
+        self
+    }
 }
 
 impl Default for Commands {
@@ -245,10 +250,6 @@ struct AsciicastGen {
     #[structopt(short = "T", long = "title")]
     title: Option<String>,
 
-    /// Append to the commands JSON input.
-    #[structopt(short, long)]
-    append: bool,
-
     /// Use the commands JSON format for the output instead of the asciicast format.
     #[structopt(short = "c", long = "command")]
     use_commands_json: bool,
@@ -272,19 +273,17 @@ struct AsciicastGen {
 
 impl AsciicastGen {
     pub fn execute(self) -> Result<()> {
-        let commands: Commands = if let Some(input_file) = &self.input_file {
+        let mut commands: Commands = if let Some(input_file) = &self.input_file {
             let file = File::open(input_file)?;
             let reader = BufReader::new(file);
             serde_json::from_reader(reader)
         } else {
-            Ok(Commands {
-                commands: vec![Command {
-                    input: self.input.clone().expect("Input positional argument"),
-                    outputs: self.outputs.clone(),
-                }],
-                ..Default::default()
-            })
+            Ok(Default::default())
         }?;
+        commands.append(Command {
+            input: self.input.clone().expect("Input positional argument"),
+            outputs: self.outputs.clone(),
+        });
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
         } else {

@@ -85,11 +85,8 @@ See the [Releases] page for pre-built binaries and distributions.
 ```
 
 ``` sh
-~$ asciicast-gen -ac "echo 'Hello World'" "Hello World" | asciicast-gen -ac "echo 'Hello World Again'" "Hello World Again" | asciicast-gen
-```
-
-``` sh
-~$ asciicast-gen "ls" "file1" "file2" "file3" "<ENTER>" "echo 'Hello World Again'" "Hello World Again"
+~$ asciicast-gen -c "echo 'Hello World'" "Hello World" | asciicast-gen -c "echo 'Hello World Again'" "Hello World Again" | asciicast-gen
+TODO: Add STDOUT of JSON cast file that is generated
 ```
 
 ``` sh
