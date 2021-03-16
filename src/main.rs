@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap_verbosity_flag::Verbosity;
+use colorful::{Color, Colorful};
 use env_logger::fmt::Color as LogColor;
 use env_logger::Builder;
 use log::Level;
@@ -18,7 +19,6 @@ const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
-const PROMPT: &str = "~$ ";
 const DELAY_TYPE_START: usize = 750;
 const DELAY_TYPE_CHAR: usize = 35;
 const DELAY_TYPE_SUBMIT: usize = 350;
@@ -138,7 +138,11 @@ struct Args {
     #[structopt(flatten)]
     verbose: Verbosity,
 
-    /// Mimic keypress logging functionality
+    /// The prompt to display before the command.
+    #[structopt(short = "p", long = "prompt", default_value = "~$ ")]
+    prompt: String,
+
+    /// Mimic keypress logging functionality of the asciinema record functionality.
     #[structopt(short, long)]
     stdin: bool,
 
@@ -150,11 +154,11 @@ struct Args {
     #[structopt(short = "o", long = "output", value_name("FILE"), parse(from_os_str))]
     output_file: Option<PathBuf>,
 
-    /// Input command
+    /// The command entered at the prompt
     #[structopt(requires("outputs"))]
     input: Option<String>,
 
-    /// Output from input command
+    /// Output from the command
     #[structopt(min_values = 1)]
     outputs: Vec<String>,
 }
@@ -165,7 +169,11 @@ where
 {
     serde_json::to_writer(
         &mut writer,
-        &Event(start_delay as f64 / 1000.0, EventKind::default(), prompt),
+        &Event(
+            start_delay as f64 / 1000.0,
+            EventKind::default(),
+            &format!("{}", prompt.color(Color::Blue)),
+        ),
     )?;
     writeln!(&mut writer)?;
     Ok(())
@@ -219,7 +227,7 @@ fn main() -> Result<()> {
     serde_json::to_writer(&mut writer, &Header::default())?;
     writeln!(&mut writer)?;
     for command in commands.iter() {
-        write_prompt(&mut writer, PROMPT, start_delay)?;
+        write_prompt(&mut writer, &args.prompt, start_delay)?;
         let input_time =
             (DELAY_TYPE_START + DELAY_TYPE_CHAR * command.input.len() + DELAY_TYPE_SUBMIT) / speed;
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {

@@ -19,6 +19,7 @@ name = "asciicast-gen"
 [dependencies]
 anyhow = "1.0"
 clap-verbosity-flag = "0.3"
+colorful = "0.2"
 env_logger = "0.8"
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
