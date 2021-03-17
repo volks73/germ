@@ -3,6 +3,7 @@ use atty::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::env;
+use std::fmt;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
@@ -185,6 +186,15 @@ enum EventKind {
     #[allow(dead_code)]
     #[serde(rename = "i")]
     Keypress,
+}
+
+impl fmt::Display for EventKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Printed => write!(f, "o"),
+            Self::Keypress => write!(f, "i"),
+        }
+    }
 }
 
 impl Default for EventKind {
