@@ -1,6 +1,6 @@
 # <em>G</em>enerate t<em>ERM</em>inal: An application to generate terminal session recordings without rehearsing or recording
 
-This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from the progression of "gen term" to "gterm" to "germ". This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
+This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from the progression of "generate terminal" to "genterm" to "gterm" to "germ". This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
 
 >...Other solutions usually involve recording a live screen. I wanted a way to simply provide a payload of instructions so I didn't have to rehearse my typing and wait for network output...
 
