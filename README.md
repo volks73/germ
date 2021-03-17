@@ -1,10 +1,10 @@
 # germ: An application to generate terminal session recordings without rehearsing or recording
 
-This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
+This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from "gen term" to "gterm" to "germ" and "_g_enerate t_erm_inal". This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
 
 >...Other solutions usually involve recording a live screen. I wanted a way to simply provide a payload of instructions so I didn't have to rehearse my typing and wait for network output...
 
-While asciinema and its ecosystem is great application, it is one of these "Other solutions". Similiarly, I wanted to generate terminal animations without rehearsing, and really appreciated the payload-based implementation. However, I still wanted to create the animations from within the terminal and be able to easily share asciicasts through the [asciinema.org] website. Additional inspiration is taken from the [Termynal] project, which was put to excellent use by the [Typer] team for their documentation, but the output for Termynal is not embeddable in GitHub README files.
+While asciinema and its ecosystem is great, it is one of these "Other solutions". Similiarly, I wanted to generate terminal animations without rehearsing, and really appreciated the payload-based implementation. However, I still wanted to create the recordings from within the terminal and be able to easily share asciicasts through the [asciinema.org] website. The TermSheets web application required generating JSON within the website and/or copying-n-pasting from a text editor. Additional inspiration is taken from the [Termynal] project, which was put to excellent use by the [Typer] team for their documentation, but the output for Termynal is not embeddable in GitHub README files.
 
 This is all possible because of the excellent documentation, support, and openness of all of the mentioned projects. Thank you!
 
@@ -46,14 +46,7 @@ See the [Releases] page for pre-built binaries and distributions.
 ``` sh
 ~$ git clone https://github.com/volks73/germ.git
 ~$ cd germ
-~/germ$ cargo build --release
-~/germ$ cargo install --path ./
-```
-
-### Crates.io
-
-``` sh
-~$ cargo install germ
+~/germ$ cargo install --path .
 ```
 
 ## Usage
