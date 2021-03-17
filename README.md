@@ -8,9 +8,6 @@ While asciinema and its ecosystem is great, it is one of these "Other solutions"
 
 This is all possible because of the excellent documentation, support, and openness of all of the mentioned projects. Thank you!
 
-[![Crates.io](https://img.shields.io/crates/v/germ.svg)](https://crates.io/crates/cargo-wix)
-[![GitHub release](https://img.shields.io/github/release/volks73/germ.svg)](https://github.com/volks73/germ/releases)
-[![Crates.io](https://img.shields.io/crates/l/germ.svg)](https://github.com/volks73/germ#license)
 [![Build Status](https://github.com/volks73/germ/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/germ/actions?query=branch%3main)
 
 [asciinema]: https://asciinema.org/
