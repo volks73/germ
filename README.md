@@ -8,7 +8,7 @@ While asciinema and its ecosystem is great, it is one of these "Other solutions"
 
 This is all possible because of the excellent documentation, support, and openness of all of the mentioned projects. Thank you!
 
-[![Build Status](https://github.com/volks73/germ/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/germ/actions?query=branch%3main)
+[![Build Status](https://github.com/volks73/germ/workflows/CI/badge.svg)](https://github.com/volks73/germ/actions)
 
 [asciinema]: https://asciinema.org/
 [asciicast files]: https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
