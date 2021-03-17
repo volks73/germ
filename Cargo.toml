@@ -1,20 +1,20 @@
 [package]
-name = "asciicast-gen"
+name = "germ"
 version = "0.1.0"
 authors = ["Christopher Field <cfield2@gmail.com>"]
-description = "Generate asciicast files without using the asciinema record functionality"
+description = "Generate terminal session recording files without rehearsing and recording"
 license = "GPL-3.0"
 edition = "2018"
 readme = "README.md"
-repository = "https://github.com/volks73/asciicast-gen"
-documentation = "https://volks73.github.io/asciicast-gen"
+repository = "https://github.com/volks73/germ"
+documentation = "https://volks73.github.io/germ"
 categories = ["development-tools"]
-keywords = ["asciinema", "asciicast", "json", "cli", "application"]
-homepage = "https://github.com/volks73/asciicast-gen"
+keywords = ["asciinema", "asciicast", "termsheet", "json", "cli", "application", "terminal", "recording"]
+homepage = "https://github.com/volks73/germ"
 exclude = ["/.github"]
 
 [[bin]]
-name = "asciicast-gen"
+name = "germ"
 
 [dependencies]
 anyhow = "1.0"
@@ -24,5 +24,5 @@ serde_json = "1"
 structopt = "0.3"
 
 [badges]
-is-it-maintained-issue-resolution = { repository = "volks73/asciicast-gen" }
-is-it-maintained-open-issues = { repository = "volks73/asciicast-gen" }
+is-it-maintained-issue-resolution = { repository = "volks73/germ" }
+is-it-maintained-open-issues = { repository = "volks73/germ" }

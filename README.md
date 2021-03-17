@@ -1,20 +1,20 @@
-# asciicast-gen: An application to generate [asciinema] cast files without recording
+# germ: An application to generate terminal session recordings without rehearsing or recording
 
-This is a command line application for generating [asciinema] [cast files], a.k.a. asciicast files, without using asciinema's record functionality. This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
+This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
 
 >...Other solutions usually involve recording a live screen. I wanted a way to simply provide a payload of instructions so I didn't have to rehearse my typing and wait for network output...
 
-The asciinema application is one of these "Other solutions". Similiarly, I wanted to generate terminal animations without rehearsing, and really appreciated the payload-based implementation. However, I still wanted to create the animations from within the terminal and be able to easily share asciicasts through the [asciinema.org] website. Additional inspiration is taken from the [Termynal] project as well, which was put to excellent use by the [Typer] team for their documentation, but the output for Termynal is not embedable in GitHub README files.
+While asciinema and its ecosystem is great application, it is one of these "Other solutions". Similiarly, I wanted to generate terminal animations without rehearsing, and really appreciated the payload-based implementation. However, I still wanted to create the animations from within the terminal and be able to easily share asciicasts through the [asciinema.org] website. Additional inspiration is taken from the [Termynal] project, which was put to excellent use by the [Typer] team for their documentation, but the output for Termynal is not embeddable in GitHub README files.
 
 This is all possible because of the excellent documentation, support, and openness of all of the mentioned projects. Thank you!
 
-[![Crates.io](https://img.shields.io/crates/v/asciicast-gen.svg)](https://crates.io/crates/cargo-wix)
-[![GitHub release](https://img.shields.io/github/release/volks73/asciicast-gen.svg)](https://github.com/volks73/asciicast-gen/releases)
-[![Crates.io](https://img.shields.io/crates/l/asciicast-gen.svg)](https://github.com/volks73/asciicast-gen#license)
-[![Build Status](https://github.com/volks73/asciicast-gen/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/asciicast-gen/actions?query=branch%3main)
+[![Crates.io](https://img.shields.io/crates/v/germ.svg)](https://crates.io/crates/cargo-wix)
+[![GitHub release](https://img.shields.io/github/release/volks73/germ.svg)](https://github.com/volks73/germ/releases)
+[![Crates.io](https://img.shields.io/crates/l/germ.svg)](https://github.com/volks73/germ#license)
+[![Build Status](https://github.com/volks73/germ/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/germ/actions?query=branch%3main)
 
 [asciinema]: https://asciinema.org/
-[cast files]: https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
+[asciicast files]: https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
 [TermSheets]: https://neatsoftware.github.io/term-sheets/
 [asciinema.org]: https://asciinema.org
 [Termynal]: https://github.com/ines/termynal
@@ -25,7 +25,7 @@ This is all possible because of the excellent documentation, support, and openne
 Start a terminal and then execute the following commands:
 
 ``` sh
-~$ asciicast-gen "echo 'Hello World'" "Hello World" > tmp.cast
+~$ germ "echo 'Hello World'" "Hello World" > tmp.cast
 ~$ asciinema play tmp.cast
 ~$ echo 'Hello World'
 Hello World
@@ -39,27 +39,27 @@ Hello World
 
 See the [Releases] page for pre-built binaries and distributions.
 
-[Releases]: https://github.com/volks73/asciicast-gen/releases
+[Releases]: https://github.com/volks73/germ/releases
 
 ### Source
 
 ``` sh
-~$ git clone https://github.com/volks73/asciicast-gen.git
-~$ cd asciicast-gen
-~/asciicast-gen$ cargo build --release
-~/asciicast-gen$ cargo install --path ./
+~$ git clone https://github.com/volks73/germ.git
+~$ cd germ
+~/germ$ cargo build --release
+~/germ$ cargo install --path ./
 ```
 
 ### Crates.io
 
 ``` sh
-~$ cargo install asciicast-gen
+~$ cargo install germ
 ```
 
 ## Usage
 
 ``` sh
-~$ asciicast-gen "echo 'Hello World'" "Hello World"
+~$ germ "echo 'Hello World'" "Hello World"
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -85,7 +85,7 @@ See the [Releases] page for pre-built binaries and distributions.
 ```
 
 ``` sh
-~$ asciicast-gen -c "echo 'Hello World'" "Hello World" | asciicast-gen -c "echo 'Hello World Again'" "Hello World Again" | asciicast-gen
+~$ germ -c "echo 'Hello World'" "Hello World" | germ -c "echo 'Hello World Again'" "Hello World Again" | germ
 {"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -138,7 +138,7 @@ See the [Releases] page for pre-built binaries and distributions.
 ```
 
 ``` sh
-~$ asciicast-gen -c "echo 'Hello World'" "Hello World"
+~$ germ -c "echo 'Hello World'" "Hello World"
 {
     "version": 1,
     "commands": [
@@ -148,8 +148,8 @@ See the [Releases] page for pre-built binaries and distributions.
         },
     ]
 }
-~$ asciicast-gen -c "echo 'Hello World'" "Hello World" > commands.json
-~$ asciicast-gen < commands.json
+~$ germ -c "echo 'Hello World'" "Hello World" > commands.json
+~$ germ < commands.json
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -172,7 +172,7 @@ See the [Releases] page for pre-built binaries and distributions.
 [1.345,"o","'"]
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
-~$ cat commands.json | asciicast-gen
+~$ cat commands.json | germ
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -195,7 +195,7 @@ See the [Releases] page for pre-built binaries and distributions.
 [1.345,"o","'"]
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
-~$ asciicast-gen -i commands.json
+~$ germ -i commands.json
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","~$ "]
 [0.75,"o","e"]
@@ -248,7 +248,7 @@ asciinema-gen -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello
 ```
 
 ``` sh
-~$ asciicast-gen -o example.cast
+~$ germ -o example.cast
 echo "Hello World"
 World Hello
 echo "Hello World Again"
@@ -328,7 +328,7 @@ Hello World Again
 
 ## License
 
-The `asciicast-gen` project is licensed under either the [GPL-3.0]. See the [LICENSE] file for more information about licensing and copyright.
+The `germ` project is licensed under either the [GPL-3.0]. See the [LICENSE] file for more information about licensing and copyright.
 
 [GPL-3.0]: https://opensource.org/licenses/GPL-3.0
-[LICENSE]: https://github.com/volks73/asciicast-gen/blob/master/LICENSE
+[LICENSE]: https://github.com/volks73/germ/blob/master/LICENSE
