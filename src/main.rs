@@ -1,7 +1,6 @@
 use anyhow::Result;
 use atty::Stream;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::env;
 use std::fmt;
 use std::fs::File;
@@ -353,12 +352,10 @@ impl Germ {
     pub fn execute(self) -> Result<()> {
         let mut commands = if let Some(input_file) = &self.input_file {
             serde_json::from_reader(BufReader::new(File::open(input_file)?))
+        } else if atty::is(Stream::Stdin) {
+            Ok(Commands::default())
         } else {
-            if atty::is(Stream::Stdin) {
-                Ok(Commands::default())
-            } else {
-                serde_json::from_reader(io::stdin())
-            }
+            serde_json::from_reader(io::stdin())
         }?;
         if let Some(input) = self.input.as_ref() {
             commands.add(Command {
