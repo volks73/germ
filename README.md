@@ -1,4 +1,4 @@
-# _g_enerate t_erm_inal: An application to generate terminal session recordings without rehearsing or recording
+# <strong>g</strong>enerate t<strong>erm<strong>inal: An application to generate terminal session recordings without rehearsing or recording
 
 This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from the progression of "gen term" to "gterm" to "germ". This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
 
