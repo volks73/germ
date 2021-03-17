@@ -247,8 +247,10 @@ impl Hold {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "Generate asciicast files without using asciinema's recording functionality")]
-struct AsciicastGen {
+#[structopt(
+    about = "Generate termainl session recording files without using rehearsing and recording"
+)]
+struct Germ {
     /// The delay before starting the simulated typing for the command.
     ///
     /// The units are in milliseconds (ms).
@@ -347,7 +349,7 @@ struct AsciicastGen {
     outputs: Vec<String>,
 }
 
-impl AsciicastGen {
+impl Germ {
     pub fn execute(self) -> Result<()> {
         let mut commands = if let Some(input_file) = &self.input_file {
             serde_json::from_reader(BufReader::new(File::open(input_file)?))
@@ -469,5 +471,5 @@ impl AsciicastGen {
 }
 
 fn main() -> Result<()> {
-    AsciicastGen::from_args().execute()
+    Germ::from_args().execute()
 }
