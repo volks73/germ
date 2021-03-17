@@ -35,12 +35,6 @@ Hello World
 
 ## Installation
 
-### Binary
-
-See the [Releases] page for pre-built binaries and distributions.
-
-[Releases]: https://github.com/volks73/germ/releases
-
 ### Source
 
 ``` sh
