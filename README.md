@@ -221,6 +221,33 @@ See the [Releases] page for pre-built binaries and distributions.
 ```
 
 ``` sh
+asciinema-gen -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
+{"version":2,"width":188,"height":55,"timestamp":1615946038,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+[0.0,"o","\u001b[32m$ \u001b[39m"]
+[0.75,"o","e"]
+[0.785,"o","c"]
+[0.82,"o","h"]
+[0.855,"o","o"]
+[0.89,"o"," "]
+[0.925,"o","'"]
+[0.96,"o","H"]
+[0.995,"o","e"]
+[1.03,"o","l"]
+[1.065,"o","l"]
+[1.1,"o","o"]
+[1.135,"o"," "]
+[1.17,"o","W"]
+[1.205,"o","o"]
+[1.24,"o","r"]
+[1.275,"o","l"]
+[1.31,"o","d"]
+[1.345,"o","'"]
+[2.23,"o","\r\n"]
+[2.23,"o","Hello World\r\n"]
+[4.23,"o",""]
+```
+
+``` sh
 ~$ asciicast-gen -o example.cast
 echo "Hello World"
 World Hello
