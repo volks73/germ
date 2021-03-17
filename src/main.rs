@@ -36,19 +36,19 @@ impl ApplySpeed for f64 {
 trait SecondsConversions {
     type Output;
 
-    fn to_seconds(self) -> Self::Output;
+    fn into_seconds(self) -> Self::Output;
 
-    fn to_milliseconds(self) -> Self::Output;
+    fn into_milliseconds(self) -> Self::Output;
 }
 
 impl SecondsConversions for f64 {
     type Output = Self;
 
-    fn to_seconds(self) -> Self::Output {
+    fn into_seconds(self) -> Self::Output {
         self / MILLISECONDS_IN_A_SECOND
     }
 
-    fn to_milliseconds(self) -> Self::Output {
+    fn into_milliseconds(self) -> Self::Output {
         self * MILLISECONDS_IN_A_SECOND
     }
 }
@@ -410,7 +410,7 @@ impl Germ {
                 .try_fold(self.begin_delay, |start_delay, command| {
                     self.write_command(command, start_delay, &mut writer)
                 })?;
-            if self.end_delay.to_milliseconds() as usize != 0 {
+            if self.end_delay.into_milliseconds() as usize != 0 {
                 Hold {
                     duration: self.end_delay,
                     start_delay,
@@ -434,12 +434,12 @@ impl Germ {
             + self.delay_type_char * command.input.len()
             + self.delay_type_submit) as f64)
             .speed(self.speed)
-            .to_seconds();
+            .into_seconds();
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
                 + ((self.delay_type_start + self.delay_type_char * i) as f64)
                     .speed(self.speed)
-                    .to_seconds();
+                    .into_seconds();
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
@@ -450,7 +450,7 @@ impl Germ {
                 + input_time
                 + ((self.delay_output_line * (i + 1)) as f64)
                     .speed(self.speed)
-                    .to_seconds();
+                    .into_seconds();
             if i == 0 {
                 Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
             }
@@ -462,7 +462,7 @@ impl Germ {
         }
         let outputs_time = ((self.delay_output_line * command.outputs.len()) as f64)
             .speed(self.speed)
-            .to_seconds();
+            .into_seconds();
         Ok(start_delay + input_time + outputs_time)
     }
 }
