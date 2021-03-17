@@ -315,4 +315,4 @@ Hello World Again
 The `germ` project is licensed under either the [GPL-3.0]. See the [LICENSE] file for more information about licensing and copyright.
 
 [GPL-3.0]: https://opensource.org/licenses/GPL-3.0
-[LICENSE]: https://github.com/volks73/germ/blob/master/LICENSE
+[LICENSE]: https://github.com/volks73/germ/blob/main/LICENSE
