@@ -183,7 +183,6 @@ enum EventKind {
     #[serde(rename = "o")]
     Printed,
 
-    #[allow(dead_code)]
     #[serde(rename = "i")]
     Keypress,
 }
