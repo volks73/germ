@@ -128,7 +128,7 @@ Hello World
     "commands": [
         {
             "input": "echo 'Hello World'",
-            "output": ["Hello World"],
+            "outputs": ["Hello World"],
         },
     ]
 }
