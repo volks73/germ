@@ -35,6 +35,31 @@ const SHELL: &str = "/bin/bash";
 const TERM: &str = "xterm-256color";
 const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 
+mod termsheets {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct Command {
+        input: String,
+        output: Vec<String>,
+    }
+
+    impl From<super::Command> for Command {
+        fn from(c: super::Command) -> Self {
+            Self {
+                input: c.input,
+                output: c.outputs,
+            }
+        }
+    }
+
+    impl From<Sequence> for Vec<Command> {
+        fn from(s: Sequence) -> Self {
+            s.into_iter().map(Command::from).collect()
+        }
+    }
+}
+
 trait ApplySpeed {
     type Output;
 
@@ -78,6 +103,10 @@ struct Sequence {
 impl Sequence {
     fn iter(&self) -> impl Iterator<Item = &Command> {
         self.commands.iter()
+    }
+
+    fn into_iter(self) -> impl Iterator<Item = Command> {
+        self.commands.into_iter()
     }
 
     fn add(&mut self, command: Command) -> &mut Self {
@@ -442,7 +471,10 @@ impl Germ {
             OutputFormats::Germ => {
                 serde_json::to_writer(&mut writer, &sequence)?;
             }
-            OutputFormats::TermSheets => {}
+            OutputFormats::TermSheets => {
+                let termsheets: Vec<termsheets::Command> = sequence.into();
+                serde_json::to_writer(&mut writer, &termsheets)?;
+            }
             OutputFormats::Asciicast => {
                 Header {
                     width: self.width,
