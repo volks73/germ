@@ -53,9 +53,28 @@ mod termsheets {
         }
     }
 
+    impl From<Command> for super::Command {
+        fn from(c: Command) -> Self {
+            Self {
+                prompt: String::from("~$ "),
+                input: c.input,
+                outputs: c.output,
+            }
+        }
+    }
+
     impl From<Sequence> for Vec<Command> {
         fn from(s: Sequence) -> Self {
             s.into_iter().map(Command::from).collect()
+        }
+    }
+
+    impl From<Vec<Command>> for Sequence {
+        fn from(t: Vec<Command>) -> Self {
+            Self {
+                commands: t.into_iter().map(super::Command::from).collect(),
+                ..Default::default()
+            }
         }
     }
 }
@@ -271,6 +290,7 @@ impl Hold {
 }
 
 #[derive(Debug, EnumString, EnumVariantNames)]
+#[strum(serialize_all = "lowercase")]
 enum InputFormats {
     Germ,
     TermSheets,
@@ -362,12 +382,24 @@ struct Germ {
     #[structopt(short = "G")]
     use_germ_format: bool,
 
+    /// The format of the input.
+    #[structopt(
+        short = "I",
+        long,
+        possible_values = InputFormats::VARIANTS,
+        case_insensitive = true,
+        default_value = "germ",
+        value_name = "format"
+    )]
+    input_format: InputFormats,
+
     /// Input file in the commands JSON format.
     ///
     /// If not present, then stdin if it is piped or redirected.
     #[structopt(short = "i", long = "input", value_name("file"), parse(from_os_str))]
     input_file: Option<PathBuf>,
 
+    /// The format for the output.
     #[structopt(
         short = "O",
         long,
@@ -403,11 +435,25 @@ struct Germ {
 impl Germ {
     pub fn execute(self) -> Result<()> {
         let mut sequence = if let Some(input_file) = &self.input_file {
-            serde_json::from_reader(BufReader::new(File::open(input_file)?))
+            let buf = BufReader::new(File::open(input_file)?);
+            match self.input_format {
+                InputFormats::Germ => serde_json::from_reader(buf),
+                InputFormats::TermSheets => {
+                    let termsheets: Vec<termsheets::Command> = serde_json::from_reader(buf)?;
+                    Ok(Sequence::from(termsheets))
+                }
+            }
         } else if atty::is(Stream::Stdin) {
             Ok(Sequence::default())
         } else {
-            serde_json::from_reader(io::stdin())
+            let stdin = io::stdin();
+            match self.input_format {
+                InputFormats::Germ => serde_json::from_reader(stdin),
+                InputFormats::TermSheets => {
+                    let termsheets: Vec<termsheets::Command> = serde_json::from_reader(stdin)?;
+                    Ok(Sequence::from(termsheets))
+                }
+            }
         }?;
         if let Some(input) = self.input.as_ref() {
             sequence.add(Command {
@@ -415,7 +461,7 @@ impl Germ {
                 input: input.clone(),
                 outputs: self.outputs.clone(),
             });
-        } else {
+        } else if self.input_file.is_none() && atty::is(Stream::Stdin) {
             let mut line = String::new();
             let stdin = io::stdin();
             let mut stdout = io::stdout();
