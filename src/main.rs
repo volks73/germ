@@ -28,7 +28,7 @@ use structopt::StructOpt;
 use strum::{EnumString, EnumVariantNames, VariantNames};
 
 const ASCIICAST_VERSION: usize = 2;
-const COMMANDS_VERSION: usize = 1;
+const SEQUENCE_VERSION: usize = 1;
 const WIDTH: usize = 188;
 const HEIGHT: usize = 55;
 const SHELL: &str = "/bin/bash";
@@ -70,12 +70,12 @@ impl SecondsConversions for f64 {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Commands {
+struct Sequence {
     version: usize,
     commands: Vec<Command>,
 }
 
-impl Commands {
+impl Sequence {
     fn iter(&self) -> impl Iterator<Item = &Command> {
         self.commands.iter()
     }
@@ -86,10 +86,10 @@ impl Commands {
     }
 }
 
-impl Default for Commands {
+impl Default for Sequence {
     fn default() -> Self {
         Self {
-            version: COMMANDS_VERSION,
+            version: SEQUENCE_VERSION,
             commands: Vec::new(),
         }
     }
@@ -393,15 +393,15 @@ struct Germ {
 
 impl Germ {
     pub fn execute(self) -> Result<()> {
-        let mut commands = if let Some(input_file) = &self.input_file {
+        let mut sequence = if let Some(input_file) = &self.input_file {
             serde_json::from_reader(BufReader::new(File::open(input_file)?))
         } else if atty::is(Stream::Stdin) {
-            Ok(Commands::default())
+            Ok(Sequence::default())
         } else {
             serde_json::from_reader(io::stdin())
         }?;
         if let Some(input) = self.input.as_ref() {
-            commands.add(Command {
+            sequence.add(Command {
                 input: input.clone(),
                 outputs: self.outputs.clone(),
             });
@@ -425,7 +425,7 @@ impl Germ {
                         .expect("Child process stdin to be captured")
                         .write_all(trimmed_line.as_bytes())?;
                     let output = child.wait_with_output()?;
-                    commands.add(Command {
+                    sequence.add(Command {
                         input: trimmed_line.to_owned(),
                         outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
                     });
@@ -440,7 +440,7 @@ impl Germ {
         };
         match self.output_format {
             OutputFormats::Germ => {
-                serde_json::to_writer(&mut writer, &commands)?;
+                serde_json::to_writer(&mut writer, &sequence)?;
             }
             OutputFormats::TermSheets => {}
             OutputFormats::Asciicast => {
@@ -451,7 +451,7 @@ impl Germ {
                     ..Default::default()
                 }
                 .to_writer(&mut writer)?;
-                let start_delay = commands
+                let start_delay = sequence
                     .iter()
                     .try_fold(self.begin_delay, |start_delay, command| {
                         self.write_command(command, start_delay, &mut writer)
