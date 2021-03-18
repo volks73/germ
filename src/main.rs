@@ -25,6 +25,7 @@ use std::path::PathBuf;
 use std::process::{self, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
+use strum::{EnumString, EnumVariantNames, VariantNames};
 
 const ASCIICAST_VERSION: usize = 2;
 const COMMANDS_VERSION: usize = 1;
@@ -260,6 +261,20 @@ impl Hold {
     }
 }
 
+#[derive(Debug, EnumString, EnumVariantNames)]
+enum InputFormats {
+    Germ,
+    TermSheets,
+}
+
+#[derive(Debug, EnumString, EnumVariantNames)]
+#[strum(serialize_all = "lowercase")]
+enum OutputFormats {
+    Germ,
+    TermSheets,
+    Asciicast,
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Generate termainl session recording files without using rehearsing and recording"
@@ -268,25 +283,25 @@ struct Germ {
     /// The delay before starting the simulated typing for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(short = "", long, default_value = "750", value_name = "ms")]
+    #[structopt(long, default_value = "750", value_name = "ms")]
     delay_type_start: usize,
 
     /// The delay between simulating typing of characters for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(short = "", long, default_value = "35", value_name = "ms")]
+    #[structopt(long, default_value = "35", value_name = "ms")]
     delay_type_char: usize,
 
     /// The delay between the simulated typing and output printing.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(short = "", long, default_value = "350", value_name = "ms")]
+    #[structopt(long, default_value = "350", value_name = "ms")]
     delay_type_submit: usize,
 
     /// The delay between outputs for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(short = "", long, default_value = "500", value_name = "ms")]
+    #[structopt(long, default_value = "500", value_name = "ms")]
     delay_output_line: usize,
 
     /// The prompt to display before the command.
@@ -294,7 +309,7 @@ struct Germ {
     prompt: String,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
-    #[structopt(short = "", long)]
+    #[structopt(long)]
     stdin: bool,
 
     /// Speed up or slow down the animation by this factor.
@@ -332,15 +347,28 @@ struct Germ {
     #[structopt(short = "T", long = "title")]
     title: Option<String>,
 
-    /// Use the commands JSON format for the output instead of the asciicast format.
-    #[structopt(short = "c", long = "command")]
-    use_commands_json: bool,
+    /// Use the Germ JSON format for the output.
+    ///
+    /// This is equivalent to '-O,--output-format germ'.
+    #[structopt(short = "G")]
+    use_germ_format: bool,
 
     /// Input file in the commands JSON format.
     ///
     /// If not present, then stdin if it is piped or redirected.
     #[structopt(short = "i", long = "input", value_name("file"), parse(from_os_str))]
     input_file: Option<PathBuf>,
+
+    #[structopt(
+        short = "O",
+        long,
+        possible_values = OutputFormats::VARIANTS,
+        case_insensitive = true,
+        default_value = "asciicast",
+        default_value_if("use-germ-format", None, "germ"),
+        value_name = "format"
+    )]
+    output_format: OutputFormats,
 
     /// Output file, stdout if not present.
     ///
@@ -410,27 +438,31 @@ impl Germ {
         } else {
             Box::new(io::stdout())
         };
-        if self.use_commands_json {
-            serde_json::to_writer(&mut writer, &commands)?;
-        } else {
-            Header {
-                width: self.width,
-                height: self.height,
-                title: self.title.as_deref(),
-                ..Default::default()
+        match self.output_format {
+            OutputFormats::Germ => {
+                serde_json::to_writer(&mut writer, &commands)?;
             }
-            .to_writer(&mut writer)?;
-            let start_delay = commands
-                .iter()
-                .try_fold(self.begin_delay, |start_delay, command| {
-                    self.write_command(command, start_delay, &mut writer)
-                })?;
-            if self.end_delay.into_milliseconds() as usize != 0 {
-                Hold {
-                    duration: self.end_delay,
-                    start_delay,
+            OutputFormats::TermSheets => {}
+            OutputFormats::Asciicast => {
+                Header {
+                    width: self.width,
+                    height: self.height,
+                    title: self.title.as_deref(),
+                    ..Default::default()
                 }
                 .to_writer(&mut writer)?;
+                let start_delay = commands
+                    .iter()
+                    .try_fold(self.begin_delay, |start_delay, command| {
+                        self.write_command(command, start_delay, &mut writer)
+                    })?;
+                if self.end_delay.into_milliseconds() as usize != 0 {
+                    Hold {
+                        duration: self.end_delay,
+                        start_delay,
+                    }
+                    .to_writer(&mut writer)?;
+                }
             }
         }
         Ok(())
