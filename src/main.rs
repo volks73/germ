@@ -126,6 +126,7 @@ impl Default for Sequence {
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Command {
+    prompt: String,
     input: String,
     outputs: Vec<String>,
 }
@@ -240,12 +241,6 @@ impl fmt::Display for EventKind {
     }
 }
 
-impl Default for EventKind {
-    fn default() -> Self {
-        EventKind::Printed
-    }
-}
-
 #[derive(Debug, Serialize)]
 struct Event<'a>(f64, EventKind, &'a str);
 
@@ -261,21 +256,6 @@ impl<'a> Event<'a> {
 }
 
 #[derive(Debug)]
-struct Prompt<'a> {
-    content: &'a str,
-    start_delay: f64,
-}
-
-impl<'a> Prompt<'a> {
-    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
-    where
-        W: Write,
-    {
-        Event(self.start_delay, EventKind::default(), self.content).to_writer(&mut writer)
-    }
-}
-
-#[derive(Debug)]
 struct Hold {
     duration: f64,
     start_delay: f64,
@@ -286,7 +266,7 @@ impl Hold {
     where
         W: Write,
     {
-        Event(self.start_delay + self.duration, EventKind::default(), "").to_writer(&mut writer)
+        Event(self.start_delay + self.duration, EventKind::Printed, "").to_writer(&mut writer)
     }
 }
 
@@ -431,6 +411,7 @@ impl Germ {
         }?;
         if let Some(input) = self.input.as_ref() {
             sequence.add(Command {
+                prompt: self.prompt.clone(),
                 input: input.clone(),
                 outputs: self.outputs.clone(),
             });
@@ -455,6 +436,7 @@ impl Germ {
                         .write_all(trimmed_line.as_bytes())?;
                     let output = child.wait_with_output()?;
                     sequence.add(Command {
+                        prompt: self.prompt.clone(),
                         input: trimmed_line.to_owned(),
                         outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
                     });
@@ -504,11 +486,7 @@ impl Germ {
     where
         W: Write,
     {
-        Prompt {
-            content: &self.prompt,
-            start_delay,
-        }
-        .to_writer(&mut writer)?;
+        Event(start_delay, EventKind::Printed, &command.prompt).to_writer(&mut writer)?;
         let input_time = ((self.delay_type_start
             + self.delay_type_char * command.input.len()
             + self.delay_type_submit) as f64)
@@ -522,7 +500,7 @@ impl Germ {
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
-            Event(char_delay, EventKind::default(), &c).to_writer(&mut writer)?;
+            Event(char_delay, EventKind::Printed, &c).to_writer(&mut writer)?;
         }
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay = start_delay
@@ -531,12 +509,12 @@ impl Germ {
                     .speed(self.speed)
                     .into_seconds();
             if i == 0 {
-                Event(show_delay, EventKind::default(), "\r\n").to_writer(&mut writer)?;
+                Event(show_delay, EventKind::Printed, "\r\n").to_writer(&mut writer)?;
             }
             for line in output.lines() {
                 let mut output_data = String::from(line);
                 output_data.push_str("\r\n");
-                Event(show_delay, EventKind::default(), &output_data).to_writer(&mut writer)?;
+                Event(show_delay, EventKind::Printed, &output_data).to_writer(&mut writer)?;
             }
         }
         let outputs_time = ((self.delay_output_line * command.outputs.len()) as f64)
