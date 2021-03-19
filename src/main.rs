@@ -382,6 +382,12 @@ struct Germ {
     #[structopt(short = "G")]
     use_germ_format: bool,
 
+    /// Prints the warranty information.
+    ///
+    /// This is as recommended by the GPL-3.0 license.
+    #[structopt(long)]
+    warranty: bool,
+
     /// The format of the input.
     #[structopt(
         short = "I",
@@ -434,6 +440,10 @@ struct Germ {
 
 impl Germ {
     pub fn execute(self) -> Result<()> {
+        if self.warranty {
+            print_warranty();
+            return Ok(());
+        }
         let mut sequence = if let Some(input_file) = &self.input_file {
             let buf = BufReader::new(File::open(input_file)?);
             match self.input_format {
@@ -572,4 +582,17 @@ impl Germ {
 
 fn main() -> Result<()> {
     Germ::from_args().execute()
+}
+
+fn print_warranty() {
+    println!(
+        r#"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION."#
+    )
 }
