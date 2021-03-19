@@ -382,6 +382,12 @@ struct Germ {
     #[structopt(short = "G")]
     use_germ_format: bool,
 
+    /// Prints the license information.
+    ///
+    /// This is as recommended by the GPL-3.0 license.
+    #[structopt(long)]
+    license: bool,
+
     /// Prints the warranty information.
     ///
     /// This is as recommended by the GPL-3.0 license.
@@ -440,6 +446,10 @@ struct Germ {
 
 impl Germ {
     pub fn execute(self) -> Result<()> {
+        if self.license {
+            print_license();
+            return Ok(());
+        }
         if self.warranty {
             print_warranty();
             return Ok(());
@@ -594,5 +604,24 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
 IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
 ALL NECESSARY SERVICING, REPAIR OR CORRECTION."#
+    )
+}
+
+fn print_license() {
+    println!(
+        r#"Copyright (C) 2021  Christopher R. Field
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>."#
     )
 }
