@@ -482,6 +482,8 @@ impl Germ {
                 outputs: self.outputs.clone(),
             });
         } else if self.input_file.is_none() && atty::is(Stream::Stdin) {
+            print_interactive_notice();
+            println!();
             let mut line = String::new();
             let stdin = io::stdin();
             let mut stdout = io::stdout();
@@ -592,6 +594,22 @@ impl Germ {
 
 fn main() -> Result<()> {
     Germ::from_args().execute()
+}
+
+fn print_interactive_notice() {
+    println!(
+        r#"Copyright (C) 2021  Christopher R. Field
+This program comes with ABSOLUTELY NO WARRANTY; for details use the `--warranty`
+flag. This is free software, and you are welcome to redistirbute it under
+certain conditions; use the `--license` flag for details.
+
+You have entered interactive mode. Type a commmand as you would at the prompt
+and press <ENTER>. The command will be executed in a separate shell and the
+output from the command will be displayed on the next line(s). Each
+command-output pair will automatically be added to the sequence.
+
+Type CTRL+D (^D) to exit and generate output or CTRL+C (^C) to abort."#
+    )
 }
 
 fn print_warranty() {
