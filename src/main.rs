@@ -29,10 +29,11 @@ use strum::{EnumString, EnumVariantNames, VariantNames};
 
 const ASCIICAST_VERSION: usize = 2;
 const SEQUENCE_VERSION: usize = 1;
-const WIDTH: usize = 188;
-const HEIGHT: usize = 55;
-const SHELL: &str = "/bin/bash";
-const TERM: &str = "xterm-256color";
+const DEFAULT_PROMPT: &str = "$ ";
+const DEFAULT_HEIGHT: usize = 55;
+const DEFAULT_SHELL: &str = "/bin/bash";
+const DEFAULT_TERM: &str = "xterm-256color";
+const DEFAULT_WIDTH: usize = 188;
 const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 
 mod termsheets {
@@ -56,7 +57,7 @@ mod termsheets {
     impl From<Command> for super::Command {
         fn from(c: Command) -> Self {
             Self {
-                prompt: String::from("~$ "),
+                prompt: String::from(DEFAULT_PROMPT),
                 input: c.input,
                 outputs: c.output,
             }
@@ -164,10 +165,10 @@ impl Default for Env {
         Self {
             shell: env::var_os("SHELL")
                 .map(|s| String::from(s.to_string_lossy()))
-                .unwrap_or_else(|| String::from(SHELL)),
+                .unwrap_or_else(|| String::from(DEFAULT_SHELL)),
             term: env::var_os("TERM")
                 .map(|s| String::from(s.to_string_lossy()))
-                .unwrap_or_else(|| String::from(TERM)),
+                .unwrap_or_else(|| String::from(DEFAULT_TERM)),
         }
     }
 }
@@ -226,8 +227,8 @@ impl<'a> Default for Header<'a> {
     fn default() -> Self {
         Self {
             version: ASCIICAST_VERSION,
-            width: WIDTH,
-            height: HEIGHT,
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .ok()
@@ -334,7 +335,7 @@ struct Germ {
     delay_output_line: usize,
 
     /// The prompt to display before the command.
-    #[structopt(short = "p", long, default_value = "~$ ")]
+    #[structopt(short = "p", long, default_value = DEFAULT_PROMPT)]
     prompt: String,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
