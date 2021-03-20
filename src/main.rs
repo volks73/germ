@@ -356,11 +356,11 @@ struct Germ {
     comment: Option<String>,
 
     /// The prompt to display before the command.
-    #[structopt(short = "p", long, default_value = DEFAULT_PROMPT)]
+    #[structopt(short = "p", long, default_value = DEFAULT_PROMPT, env = "GERM_PROMPT")]
     prompt: String,
 
     /// The prompt displayed in interactive mode.
-    #[structopt(short ="P", long, default_value = DEFAULT_INTERACTIVE_PROMPT)]
+    #[structopt(short ="P", long, default_value = DEFAULT_INTERACTIVE_PROMPT, env = "GERM_INTERACTIVE_PROMPT")]
     interactive_prompt: String,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
@@ -427,7 +427,8 @@ struct Germ {
         possible_values = InputFormats::VARIANTS,
         case_insensitive = true,
         default_value = "germ",
-        value_name = "format"
+        value_name = "format",
+        env = "GERM_INPUT_FORMAT"
     )]
     input_format: InputFormats,
 
@@ -445,7 +446,8 @@ struct Germ {
         case_insensitive = true,
         default_value = "asciicast",
         default_value_if("use-germ-format", None, "germ"),
-        value_name = "format"
+        value_name = "format",
+        env = "GERM_OUTPUT_FORMAT"
     )]
     output_format: OutputFormats,
 
