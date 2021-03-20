@@ -20,7 +20,7 @@ use std::env;
 use std::fmt;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
 use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -31,6 +31,12 @@ const ASCIICAST_VERSION: usize = 2;
 const SEQUENCE_VERSION: usize = 1;
 const SHELL_VAR_NAME: &str = "SHELL";
 const TERM_VAR_NAME: &str = "TERM";
+const DEFAULT_BEGIN_DELAY: &str = "0.0";
+const DEFAULT_END_DELAY: &str = "1.0";
+const DEFAULT_DELAY_TYPE_START: &str = "750";
+const DEFAULT_DELAY_TYPE_CHAR: &str = "35";
+const DEFAULT_DELAY_TYPE_SUBMIT: &str = "350";
+const DEFAULT_DELAY_OUTPUT_LINE: &str = "500";
 const DEFAULT_INTERACTIVE_PROMPT: &str = ">>> ";
 const DEFAULT_PROMPT: &str = "$ ";
 const DEFAULT_HEIGHT: usize = 55;
@@ -38,6 +44,8 @@ const DEFAULT_SHELL: &str = "/bin/bash";
 const DEFAULT_TERM: &str = "xterm-256color";
 const DEFAULT_WIDTH: usize = 188;
 const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
+const MILLISECONDS_UNITS: &str = "ms";
+const SECONDS_UNITS: &str = "secs";
 
 mod termsheets {
     use super::*;
@@ -119,8 +127,45 @@ impl SecondsConversions for f64 {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+struct Timings {
+    begin: f64,         // seconds
+    end: f64,           // seconds
+    type_start: usize,  // milliseconds
+    type_char: usize,   // milliseconds
+    type_submit: usize, // milliseconds
+    output_line: usize, // milliseconds
+}
+
+impl<'a> From<&'a Germ> for Timings {
+    fn from(g: &'a Germ) -> Self {
+        Self {
+            begin: g.begin_delay,
+            end: g.end_delay,
+            type_start: g.delay_type_start,
+            type_char: g.delay_type_char,
+            type_submit: g.delay_type_submit,
+            output_line: g.delay_output_line,
+        }
+    }
+}
+
+impl Default for Timings {
+    fn default() -> Self {
+        Self {
+            begin: DEFAULT_BEGIN_DELAY.parse().expect("Default float"),
+            end: DEFAULT_END_DELAY.parse().expect("Default float"),
+            type_start: DEFAULT_DELAY_TYPE_START.parse().expect("Default usize"),
+            type_char: DEFAULT_DELAY_TYPE_CHAR.parse().expect("Default usize"),
+            type_submit: DEFAULT_DELAY_TYPE_SUBMIT.parse().expect("Default usize"),
+            output_line: DEFAULT_DELAY_OUTPUT_LINE.parse().expect("Default usize"),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct Sequence {
     version: usize,
+    timings: Timings,
     commands: Vec<Command>,
 }
 
@@ -143,6 +188,7 @@ impl Default for Sequence {
     fn default() -> Self {
         Self {
             version: SEQUENCE_VERSION,
+            timings: Timings::default(),
             commands: Vec::new(),
         }
     }
@@ -328,25 +374,45 @@ struct Germ {
     /// The delay before starting the simulated typing for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(long, default_value = "750", value_name = "ms")]
+    #[structopt(
+        long,
+        default_value = DEFAULT_DELAY_TYPE_START,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_START"
+    )]
     delay_type_start: usize,
 
     /// The delay between simulating typing of characters for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(long, default_value = "35", value_name = "ms")]
+    #[structopt(
+        long,
+        default_value = DEFAULT_DELAY_TYPE_CHAR,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_CHAR"
+    )]
     delay_type_char: usize,
 
     /// The delay between the simulated typing and output printing.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(long, default_value = "350", value_name = "ms")]
+    #[structopt(
+        long,
+        default_value = DEFAULT_DELAY_TYPE_SUBMIT,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_SUBMIT"
+    )]
     delay_type_submit: usize,
 
     /// The delay between outputs for the command.
     ///
     /// The units are in milliseconds (ms).
-    #[structopt(long, default_value = "500", value_name = "ms")]
+    #[structopt(
+        long,
+        default_value = DEFAULT_DELAY_OUTPUT_LINE,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_OUTPUT_LINE"
+    )]
     delay_output_line: usize,
 
     /// A comment about the command.
@@ -395,7 +461,13 @@ struct Germ {
     /// The delay before starting the animation.
     ///
     /// The units are in seconds (s).
-    #[structopt(short = "B", long, default_value = "0.0", value_name = "secs")]
+    #[structopt(
+        short = "B",
+        long,
+        default_value = DEFAULT_BEGIN_DELAY,
+        value_name = SECONDS_UNITS,
+        env = "GERM_BEGIN_DELAY"
+    )]
     begin_delay: f64,
 
     /// The delay at the end of the animation.
@@ -403,7 +475,13 @@ struct Germ {
     /// This is useful when looping/repeat is enabled and some time between
     /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
     /// desired. The units are in seconds (s).
-    #[structopt(short = "E", long, default_value = "2.0", value_name = "secs")]
+    #[structopt(
+        short = "E",
+        long,
+        default_value = DEFAULT_END_DELAY,
+        value_name = SECONDS_UNITS,
+        env = "GERM_END_DELAY"
+    )]
     end_delay: f64,
 
     /// The title for the asciicast file.
@@ -496,22 +574,19 @@ impl Germ {
         let mut sequence = if let Some(input_file) = &self.input_file {
             let buf = BufReader::new(File::open(input_file)?);
             match self.input_format {
-                InputFormats::Germ => serde_json::from_reader(buf),
-                InputFormats::TermSheets => {
-                    let termsheets: Vec<termsheets::Command> = serde_json::from_reader(buf)?;
-                    Ok(Sequence::from(termsheets))
-                }
+                InputFormats::Germ => serde_json::from_reader(buf).map_err(anyhow::Error::from),
+                InputFormats::TermSheets => self.from_termsheet(buf),
             }
         } else if atty::is(Stream::Stdin) {
-            Ok(Sequence::default())
+            Ok(Sequence {
+                timings: Timings::from(&self),
+                ..Default::default()
+            })
         } else {
             let stdin = io::stdin();
             match self.input_format {
-                InputFormats::Germ => serde_json::from_reader(stdin),
-                InputFormats::TermSheets => {
-                    let termsheets: Vec<termsheets::Command> = serde_json::from_reader(stdin)?;
-                    Ok(Sequence::from(termsheets))
-                }
+                InputFormats::Germ => serde_json::from_reader(stdin).map_err(anyhow::Error::from),
+                InputFormats::TermSheets => self.from_termsheet(stdin),
             }
         }?;
         if let Some(input) = self.input.as_ref() {
@@ -638,6 +713,22 @@ impl Germ {
             .speed(self.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)
+    }
+
+    fn from_termsheet<R: Read>(&self, reader: R) -> Result<Sequence> {
+        let termsheets: Vec<termsheets::Command> = serde_json::from_reader(reader)?;
+        Ok(Sequence {
+            timings: Timings::from(self),
+            commands: termsheets
+                .into_iter()
+                .map(|c| Command {
+                    comment: None,
+                    prompt: self.prompt.clone(),
+                    ..Command::from(c)
+                })
+                .collect(),
+            ..Default::default()
+        })
     }
 }
 
