@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::{self, Stdio};
+use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
 use strum::{EnumString, EnumVariantNames, VariantNames};
@@ -505,17 +505,9 @@ impl Germ {
                     break;
                 } else {
                     let trimmed_line = line.trim();
-                    let mut child = process::Command::new("sh")
-                        .stdin(Stdio::piped())
-                        .stderr(Stdio::piped())
-                        .stdout(Stdio::piped())
-                        .spawn()?;
-                    child
-                        .stdin
-                        .as_mut()
-                        .expect("Child process stdin to be captured")
-                        .write_all(trimmed_line.as_bytes())?;
-                    let output = child.wait_with_output()?;
+                    let output = process::Command::new(Env::shell())
+                        .args(&["-c", trimmed_line])
+                        .output()?;
                     sequence.add(Command {
                         prompt: self.prompt.clone(),
                         input: trimmed_line.to_owned(),
