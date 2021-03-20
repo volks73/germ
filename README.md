@@ -24,7 +24,7 @@ Start a terminal and then execute the following commands:
 ``` sh
 ~$ germ "echo 'Hello World'" "Hello World" > tmp.cast
 ~$ asciinema play tmp.cast
-~$ echo 'Hello World'
+$ echo 'Hello World'
 Hello World
 ```
 
@@ -45,7 +45,7 @@ Hello World
 ``` sh
 ~$ germ "echo 'Hello World'" "Hello World"
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -69,9 +69,9 @@ Hello World
 ```
 
 ``` sh
-~$ germ -c "echo 'Hello World'" "Hello World" | germ -c "echo 'Hello World Again'" "Hello World Again" | germ
+~$ germ -G "echo 'Hello World'" "Hello World" | germ -G "echo 'Hello World Again'" "Hello World Again" | germ
 {"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -92,7 +92,7 @@ Hello World
 [1.345,"o","'"]
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
-[2.23,"o","~$ "]
+[2.23,"o","$ "]
 [2.98,"o","e"]
 [3.015,"o","c"]
 [3.05,"o","h"]
@@ -122,7 +122,7 @@ Hello World
 ```
 
 ``` sh
-~$ germ -c "echo 'Hello World'" "Hello World"
+~$ germ -G "echo 'Hello World'" "Hello World"
 {
     "version": 1,
     "commands": [
@@ -132,10 +132,10 @@ Hello World
         },
     ]
 }
-~$ germ -c "echo 'Hello World'" "Hello World" > commands.json
+~$ germ -G "echo 'Hello World'" "Hello World" > commands.json
 ~$ germ < commands.json
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -158,7 +158,7 @@ Hello World
 [2.23,"o","Hello World\r\n"]
 ~$ cat commands.json | germ
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -181,7 +181,7 @@ Hello World
 [2.23,"o","Hello World\r\n"]
 ~$ germ -i commands.json
 {"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -205,7 +205,7 @@ Hello World
 ```
 
 ``` sh
-asciinema-gen -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
+germ -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
 {"version":2,"width":188,"height":55,"timestamp":1615946038,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
 [0.0,"o","\u001b[32m$ \u001b[39m"]
 [0.75,"o","e"]
@@ -233,13 +233,25 @@ asciinema-gen -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello
 
 ``` sh
 ~$ germ -o example.cast
-echo "Hello World"
+Copyright (C) 2021  Christopher R. Field
+This program comes with ABSOLUTELY NO WARRANTY; for details use the `--warranty`
+flag. This is free software, and you are welcome to redistirbute it under
+certain conditions; use the `--license` flag for details.
+
+You have entered interactive mode. Type a commmand as you would at the prompt
+and press <ENTER>. The command will be executed in a separate shell and the
+output from the command will be displayed on the next line(s). Each
+command-output pair will automatically be added to the sequence.
+
+Type CTRL+D (^D) to exit and generate output or CTRL+C (^C) to abort.
+
+>>> echo Hello World
 World Hello
-echo "Hello World Again"
+>>> echo Hello World Again
 Hello World Again
-~$ cat example.cast
+$ cat example.cast
 {"version":2,"width":188,"height":55,"timestamp":1615946740,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
-[0.0,"o","~$ "]
+[0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
 [0.82,"o","h"]
@@ -260,13 +272,13 @@ Hello World Again
 [1.345,"o","\""]
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
-[2.23,"o","~$ "]
+[2.23,"o","$ "]
 [2.98,"o","e"]
 [3.015,"o","c"]
 [3.05,"o","h"]
 [3.085,"o","o"]
 [3.12,"o"," "]
-[3.1550000000000002,"o","\""]
+[3.155,"o","\""]
 [3.19,"o","H"]
 [3.225,"o","e"]
 [3.26,"o","l"]
@@ -275,37 +287,36 @@ Hello World Again
 [3.365,"o"," "]
 [3.4,"o","W"]
 [3.435,"o","o"]
-[3.4699999999999998,"o","r"]
+[3.469,"o","r"]
 [3.505,"o","l"]
 [3.54,"o","d"]
 [3.575,"o","\""]
 [3.61,"o","\n"]
 [3.645,"o","e"]
-[3.6799999999999997,"o","c"]
+[3.679,"o","c"]
 [3.715,"o","h"]
 [3.75,"o","o"]
 [3.785,"o"," "]
-[3.8200000000000003,"o","\""]
+[3.82,"o","\""]
 [3.855,"o","H"]
-[3.8899999999999997,"o","e"]
+[3.889,"o","e"]
 [3.925,"o","l"]
 [3.96,"o","l"]
 [3.995,"o","o"]
 [4.03,"o"," "]
-[4.0649999999999995,"o","W"]
+[4.064,"o","W"]
 [4.1,"o","o"]
 [4.135,"o","r"]
 [4.17,"o","l"]
 [4.205,"o","d"]
 [4.24,"o"," "]
 [4.275,"o","A"]
-[4.3100000000000005,"o","g"]
-[4.345000000000001,"o","a"]
+[4.31,"o","g"]
+[4.345,"o","a"]
 [4.38,"o","i"]
 [4.415,"o","n"]
 [4.45,"o","\""]
 [5.335,"o","\r\n"]
-[5.335,"o","Hello World\r\n"]
 [5.335,"o","Hello World Again\r\n"]
 [7.335,"o",""]
 ```
