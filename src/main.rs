@@ -59,6 +59,7 @@ mod termsheets {
     impl From<Command> for super::Command {
         fn from(c: Command) -> Self {
             Self {
+                comment: None,
                 prompt: String::from(DEFAULT_PROMPT),
                 input: c.input,
                 outputs: c.output,
@@ -148,6 +149,8 @@ impl Default for Sequence {
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Command {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    comment: Option<String>,
     prompt: String,
     input: String,
     outputs: Vec<String>,
@@ -491,6 +494,7 @@ impl Germ {
         }?;
         if let Some(input) = self.input.as_ref() {
             sequence.add(Command {
+                comment: None,
                 prompt: self.prompt.clone(),
                 input: input.clone(),
                 outputs: self.outputs.clone(),
@@ -505,6 +509,7 @@ impl Germ {
                     .args(&["-c", &line])
                     .output()?;
                 sequence.add(Command {
+                    comment: None,
                     prompt: self.prompt.clone(),
                     input: line,
                     outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
