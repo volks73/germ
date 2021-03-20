@@ -371,6 +371,14 @@ struct Germ {
     #[structopt(short = "s", long, default_value = "1.0", value_name = "float")]
     speed: f64,
 
+    /// The SHELL environment variable for the recording.
+    #[structopt(short = "S", long, env = "SHELL", default_value = DEFAULT_SHELL)]
+    shell: String,
+
+    /// The TERM environment variable for the recording.
+    #[structopt(short = "T", long, env = "TERM", default_value = DEFAULT_TERM)]
+    term: String,
+
     /// The number of columns for the terminal.
     #[structopt(short = "W", long, default_value = "188", value_name = "cols")]
     width: usize,
@@ -399,7 +407,7 @@ struct Germ {
     end_delay: f64,
 
     /// The title for the asciicast file.
-    #[structopt(short = "T", long = "title")]
+    #[structopt(short, long)]
     title: Option<String>,
 
     /// Use the Germ JSON format for the output.
@@ -563,6 +571,10 @@ impl Germ {
                     width: self.width,
                     height: self.height,
                     title: self.title.as_deref(),
+                    env: Some(Env {
+                        shell: self.shell.clone(),
+                        term: self.term.clone(),
+                    }),
                     ..Default::default()
                 }
                 .write_to(&mut writer)?;
