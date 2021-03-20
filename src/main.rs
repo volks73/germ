@@ -540,6 +540,8 @@ impl Germ {
                 stdout.write_all(self.interactive_prompt.as_bytes())?;
                 stdout.flush()?;
             }
+            stdout.write_all(b"\n")?;
+            stdout.flush()?;
         }
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)

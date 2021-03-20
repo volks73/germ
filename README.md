@@ -44,7 +44,7 @@ Hello World
 
 ``` sh
 ~$ germ "echo 'Hello World'" "Hello World"
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -70,7 +70,7 @@ Hello World
 
 ``` sh
 ~$ germ -G "echo 'Hello World'" "Hello World" | germ -G "echo 'Hello World Again'" "Hello World Again" | germ
-{"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -134,7 +134,7 @@ Hello World
 }
 ~$ germ -G "echo 'Hello World'" "Hello World" > commands.json
 ~$ germ < commands.json
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -157,7 +157,7 @@ Hello World
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
 ~$ cat commands.json | germ
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -180,7 +180,7 @@ Hello World
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
 ~$ germ -i commands.json
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -206,7 +206,7 @@ Hello World
 
 ``` sh
 germ -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
-{"version":2,"width":188,"height":55,"timestamp":1615946038,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615946038,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","\u001b[32m$ \u001b[39m"]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -250,7 +250,7 @@ World Hello
 >>> echo Hello World Again
 Hello World Again
 $ cat example.cast
-{"version":2,"width":188,"height":55,"timestamp":1615946740,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+{"version":2,"width":188,"height":55,"timestamp":1615946740,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
