@@ -461,14 +461,17 @@ struct Germ {
     ///
     /// If not present and the -i,--input option is not used, then the
     /// application enters an interactive mode where commands are manually
-    /// entered one at a time within the terminal.
-    #[structopt(requires("outputs"))]
+    /// entered one at a time within the terminal. If present, then the command
+    /// is appended to the sequence of commands from any input file or stdin.
+    ///
+    /// Note, if present without any output, then the input will be executed
+    /// within a child shell process and the execution output will be used.
     input: Option<String>,
 
     /// Output from the command.
     ///
-    /// A command can have multiple output.
-    #[structopt(min_values = 1)]
+    /// If no output is provided, then the input will be execute within a child
+    /// shell process and execution output will be used.
     outputs: Vec<String>,
 }
 
@@ -504,11 +507,19 @@ impl Germ {
             }
         }?;
         if let Some(input) = self.input.as_ref() {
+            let outputs = if self.outputs.is_empty() {
+                let output = process::Command::new(Env::shell())
+                    .args(&["-c", &input])
+                    .output()?;
+                vec![std::str::from_utf8(&output.stdout)?.to_owned()]
+            } else {
+                self.outputs.clone()
+            };
             sequence.add(Command {
                 comment: self.comment.clone(),
                 prompt: self.prompt.clone(),
                 input: input.clone(),
-                outputs: self.outputs.clone(),
+                outputs,
             });
         } else if self.input_file.is_none() && atty::is(Stream::Stdin) {
             print_interactive_notice();
