@@ -277,10 +277,11 @@ impl fmt::Display for EventKind {
 struct Event<'a>(f64, EventKind, &'a str);
 
 impl<'a> Event<'a> {
-    pub fn to_writer<W>(&self, mut writer: W) -> Result<()>
+    pub fn to_writer<W>(&mut self, mut writer: W) -> Result<()>
     where
         W: Write,
     {
+        self.0 = (self.0 * MILLISECONDS_IN_A_SECOND).trunc() / MILLISECONDS_IN_A_SECOND;
         serde_json::to_writer(&mut writer, self)?;
         writeln!(&mut writer)?;
         Ok(())
