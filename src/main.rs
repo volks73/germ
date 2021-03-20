@@ -570,6 +570,10 @@ impl Germ {
                 + ((self.delay_type_start + self.delay_type_char * i) as f64)
                     .speed(self.speed)
                     .into_seconds();
+            if let Some(mut comment) = command.comment.clone() {
+                comment.push_str("\r\n");
+                Event(char_delay, EventKind::Printed, &comment).to_writer(&mut writer)?;
+            }
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
