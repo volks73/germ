@@ -31,6 +31,7 @@ const ASCIICAST_VERSION: usize = 2;
 const SEQUENCE_VERSION: usize = 1;
 const SHELL_VAR_NAME: &str = "SHELL";
 const TERM_VAR_NAME: &str = "TERM";
+const DEFAULT_INTERACTIVE_PROMPT: &str = ">>> ";
 const DEFAULT_PROMPT: &str = "$ ";
 const DEFAULT_HEIGHT: usize = 55;
 const DEFAULT_SHELL: &str = "/bin/bash";
@@ -360,6 +361,10 @@ struct Germ {
     #[structopt(short = "p", long, default_value = DEFAULT_PROMPT)]
     prompt: String,
 
+    /// The prompt displayed in interactive mode.
+    #[structopt(short ="P", long, default_value = DEFAULT_INTERACTIVE_PROMPT)]
+    interactive_prompt: String,
+
     /// Mimic keypress logging functionality of the asciinema record functionality.
     #[structopt(long)]
     stdin: bool,
@@ -509,6 +514,8 @@ impl Germ {
             print_interactive_notice();
             println!();
             let mut stdout = io::stdout();
+            stdout.write_all(self.interactive_prompt.as_bytes())?;
+            stdout.flush()?;
             for line in io::stdin().lock().lines() {
                 let line = line.expect("stdin line");
                 let output = process::Command::new(Env::shell())
@@ -521,6 +528,8 @@ impl Germ {
                     outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
                 });
                 stdout.write_all(&output.stdout)?;
+                stdout.write_all(self.interactive_prompt.as_bytes())?;
+                stdout.flush()?;
             }
         }
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
