@@ -350,6 +350,12 @@ struct Germ {
     #[structopt(long, default_value = "500", value_name = "ms")]
     delay_output_line: usize,
 
+    /// A comment about the command.
+    ///
+    /// A line will be "printed" in the terminal session above the prompt and input.
+    #[structopt(short, long)]
+    comment: Option<String>,
+
     /// The prompt to display before the command.
     #[structopt(short = "p", long, default_value = DEFAULT_PROMPT)]
     prompt: String,
@@ -494,7 +500,7 @@ impl Germ {
         }?;
         if let Some(input) = self.input.as_ref() {
             sequence.add(Command {
-                comment: None,
+                comment: self.comment.clone(),
                 prompt: self.prompt.clone(),
                 input: input.clone(),
                 outputs: self.outputs.clone(),
@@ -559,6 +565,10 @@ impl Germ {
     where
         W: Write,
     {
+        if let Some(mut comment) = command.comment.clone() {
+            comment.push_str("\r\n");
+            Event(start_delay, EventKind::Printed, &comment).to_writer(&mut writer)?;
+        }
         Event(start_delay, EventKind::Printed, &command.prompt).to_writer(&mut writer)?;
         let input_time = ((self.delay_type_start
             + self.delay_type_char * command.input.len()
@@ -570,10 +580,6 @@ impl Germ {
                 + ((self.delay_type_start + self.delay_type_char * i) as f64)
                     .speed(self.speed)
                     .into_seconds();
-            if let Some(mut comment) = command.comment.clone() {
-                comment.push_str("\r\n");
-                Event(char_delay, EventKind::Printed, &comment).to_writer(&mut writer)?;
-            }
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).to_writer(&mut writer)?;
             }
