@@ -497,24 +497,18 @@ impl Germ {
         } else if self.input_file.is_none() && atty::is(Stream::Stdin) {
             print_interactive_notice();
             println!();
-            let mut line = String::new();
-            let stdin = io::stdin();
             let mut stdout = io::stdout();
-            loop {
-                if stdin.lock().read_line(&mut line)? == 0 {
-                    break;
-                } else {
-                    let trimmed_line = line.trim();
-                    let output = process::Command::new(Env::shell())
-                        .args(&["-c", trimmed_line])
-                        .output()?;
-                    sequence.add(Command {
-                        prompt: self.prompt.clone(),
-                        input: trimmed_line.to_owned(),
-                        outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
-                    });
-                    stdout.write_all(&output.stdout)?;
-                }
+            for line in io::stdin().lock().lines() {
+                let line = line.expect("stdin line");
+                let output = process::Command::new(Env::shell())
+                    .args(&["-c", &line])
+                    .output()?;
+                sequence.add(Command {
+                    prompt: self.prompt.clone(),
+                    input: line,
+                    outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
+                });
+                stdout.write_all(&output.stdout)?;
             }
         }
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
