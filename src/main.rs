@@ -29,6 +29,8 @@ use strum::{EnumString, EnumVariantNames, VariantNames};
 
 const ASCIICAST_VERSION: usize = 2;
 const SEQUENCE_VERSION: usize = 1;
+const SHELL_VAR_NAME: &str = "SHELL";
+const TERM_VAR_NAME: &str = "TERM";
 const DEFAULT_PROMPT: &str = "$ ";
 const DEFAULT_HEIGHT: usize = 55;
 const DEFAULT_SHELL: &str = "/bin/bash";
@@ -163,10 +165,10 @@ struct Env {
 impl Default for Env {
     fn default() -> Self {
         Self {
-            shell: env::var_os("SHELL")
+            shell: env::var_os(SHELL_VAR_NAME)
                 .map(|s| String::from(s.to_string_lossy()))
                 .unwrap_or_else(|| String::from(DEFAULT_SHELL)),
-            term: env::var_os("TERM")
+            term: env::var_os(TERM_VAR_NAME)
                 .map(|s| String::from(s.to_string_lossy()))
                 .unwrap_or_else(|| String::from(DEFAULT_TERM)),
         }
@@ -593,10 +595,6 @@ impl Germ {
     }
 }
 
-fn main() -> Result<()> {
-    Germ::from_args().execute()
-}
-
 fn print_interactive_notice() {
     println!(
         r#"Copyright (C) 2021  Christopher R. Field
@@ -643,4 +641,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>."#
     )
+}
+
+fn main() -> Result<()> {
+    Germ::from_args().execute()
 }
