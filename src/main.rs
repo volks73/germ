@@ -162,15 +162,25 @@ struct Env {
     term: String,
 }
 
+impl Env {
+    pub fn shell() -> String {
+        env::var_os(SHELL_VAR_NAME)
+            .map(|s| String::from(s.to_string_lossy()))
+            .unwrap_or_else(|| String::from(DEFAULT_SHELL))
+    }
+
+    pub fn term() -> String {
+        env::var_os(TERM_VAR_NAME)
+            .map(|s| String::from(s.to_string_lossy()))
+            .unwrap_or_else(|| String::from(DEFAULT_TERM))
+    }
+}
+
 impl Default for Env {
     fn default() -> Self {
         Self {
-            shell: env::var_os(SHELL_VAR_NAME)
-                .map(|s| String::from(s.to_string_lossy()))
-                .unwrap_or_else(|| String::from(DEFAULT_SHELL)),
-            term: env::var_os(TERM_VAR_NAME)
-                .map(|s| String::from(s.to_string_lossy()))
-                .unwrap_or_else(|| String::from(DEFAULT_TERM)),
+            shell: Self::shell(),
+            term: Self::term(),
         }
     }
 }
