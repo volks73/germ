@@ -571,63 +571,101 @@ impl Germ {
             print_warranty();
             return Ok(());
         }
-        let mut sequence = if let Some(input_file) = &self.input_file {
-            let buf = BufReader::new(File::open(input_file)?);
-            match self.input_format {
-                InputFormats::Germ => serde_json::from_reader(buf).map_err(anyhow::Error::from),
-                InputFormats::TermSheets => self.from_termsheet(buf),
-            }
+        let mut sequence = self.read()?;
+        self.append(&mut sequence)?;
+        self.write(sequence)
+    }
+
+    fn read(&self) -> Result<Sequence> {
+        if let Some(input_file) = &self.input_file {
+            self.read_from(BufReader::new(File::open(input_file)?))
         } else if atty::is(Stream::Stdin) {
             Ok(Sequence {
-                timings: Timings::from(&self),
+                timings: Timings::from(self),
                 ..Default::default()
             })
         } else {
             let stdin = io::stdin();
-            match self.input_format {
-                InputFormats::Germ => serde_json::from_reader(stdin).map_err(anyhow::Error::from),
-                InputFormats::TermSheets => self.from_termsheet(stdin),
+            self.read_from(stdin)
+        }
+    }
+
+    fn read_from<R: Read>(&self, r: R) -> Result<Sequence> {
+        match self.input_format {
+            InputFormats::Germ => serde_json::from_reader(r).map_err(anyhow::Error::from),
+            InputFormats::TermSheets => {
+                let termsheets: Vec<termsheets::Command> = serde_json::from_reader(r)?;
+                Ok(Sequence {
+                    timings: Timings::from(self),
+                    commands: termsheets
+                        .into_iter()
+                        .map(|c| Command {
+                            comment: None,
+                            prompt: self.prompt.clone(),
+                            ..Command::from(c)
+                        })
+                        .collect(),
+                    ..Default::default()
+                })
             }
-        }?;
+        }
+    }
+
+    fn append(&self, sequence: &mut Sequence) -> Result<()> {
         if let Some(input) = self.input.as_ref() {
-            let outputs = if self.outputs.is_empty() {
-                let output = process::Command::new(Env::shell())
-                    .args(&["-c", &input])
-                    .output()?;
-                vec![std::str::from_utf8(&output.stdout)?.to_owned()]
-            } else {
-                self.outputs.clone()
-            };
-            sequence.add(Command {
-                comment: self.comment.clone(),
-                prompt: self.prompt.clone(),
-                input: input.clone(),
-                outputs,
-            });
+            self.append_arguments(sequence, input)
         } else if self.input_file.is_none() && atty::is(Stream::Stdin) {
-            print_interactive_notice();
-            println!();
-            let mut stdout = io::stdout();
+            self.append_interactively(sequence)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn append_arguments(&self, sequence: &mut Sequence, input: &str) -> Result<()> {
+        let outputs = if self.outputs.is_empty() {
+            let output = process::Command::new(Env::shell())
+                .args(&["-c", input])
+                .output()?;
+            vec![std::str::from_utf8(&output.stdout)?.to_owned()]
+        } else {
+            self.outputs.clone()
+        };
+        sequence.add(Command {
+            comment: self.comment.clone(),
+            prompt: self.prompt.clone(),
+            input: input.to_owned(),
+            outputs,
+        });
+        Ok(())
+    }
+
+    fn append_interactively(&self, sequence: &mut Sequence) -> Result<()> {
+        print_interactive_notice();
+        println!();
+        let mut stdout = io::stdout();
+        stdout.write_all(self.interactive_prompt.as_bytes())?;
+        stdout.flush()?;
+        for line in io::stdin().lock().lines() {
+            let line = line.expect("stdin line");
+            let output = process::Command::new(Env::shell())
+                .args(&["-c", &line])
+                .output()?;
+            sequence.add(Command {
+                comment: None,
+                prompt: self.prompt.clone(),
+                input: line,
+                outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
+            });
+            stdout.write_all(&output.stdout)?;
             stdout.write_all(self.interactive_prompt.as_bytes())?;
             stdout.flush()?;
-            for line in io::stdin().lock().lines() {
-                let line = line.expect("stdin line");
-                let output = process::Command::new(Env::shell())
-                    .args(&["-c", &line])
-                    .output()?;
-                sequence.add(Command {
-                    comment: None,
-                    prompt: self.prompt.clone(),
-                    input: line,
-                    outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
-                });
-                stdout.write_all(&output.stdout)?;
-                stdout.write_all(self.interactive_prompt.as_bytes())?;
-                stdout.flush()?;
-            }
-            stdout.write_all(b"\n")?;
-            stdout.flush()?;
         }
+        stdout.write_all(b"\n")?;
+        stdout.flush()?;
+        Ok(())
+    }
+
+    fn write(self, sequence: Sequence) -> Result<()> {
         let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
         } else {
@@ -713,22 +751,6 @@ impl Germ {
             .speed(self.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)
-    }
-
-    fn from_termsheet<R: Read>(&self, reader: R) -> Result<Sequence> {
-        let termsheets: Vec<termsheets::Command> = serde_json::from_reader(reader)?;
-        Ok(Sequence {
-            timings: Timings::from(self),
-            commands: termsheets
-                .into_iter()
-                .map(|c| Command {
-                    comment: None,
-                    prompt: self.prompt.clone(),
-                    ..Command::from(c)
-                })
-                .collect(),
-            ..Default::default()
-        })
     }
 }
 
