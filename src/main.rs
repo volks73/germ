@@ -323,9 +323,7 @@ enum OutputFormats {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(
-    about = "Generate terminal session recording files without using rehearsing and recording"
-)]
+#[structopt(about = "Generate terminal session recording files without rehearsing and recording")]
 struct Germ {
     /// The delay before starting the simulated typing for the command.
     ///
