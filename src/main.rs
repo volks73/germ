@@ -127,27 +127,77 @@ impl SecondsConversions for f64 {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, StructOpt)]
 struct Timings {
-    begin: f64,         // seconds
-    end: f64,           // seconds
-    type_start: usize,  // milliseconds
-    type_char: usize,   // milliseconds
-    type_submit: usize, // milliseconds
-    output_line: usize, // milliseconds
-}
+    /// The delay before starting the animation.
+    ///
+    /// The units are in seconds (s).
+    #[structopt(
+        short = "B",
+        long = "begin-delay",
+        default_value = DEFAULT_BEGIN_DELAY,
+        value_name = SECONDS_UNITS,
+        env = "GERM_BEGIN_DELAY"
+    )]
+    begin: f64, // seconds
 
-impl<'a> From<&'a Cli> for Timings {
-    fn from(g: &'a Cli) -> Self {
-        Self {
-            begin: g.begin_delay,
-            end: g.end_delay,
-            type_start: g.delay_type_start,
-            type_char: g.delay_type_char,
-            type_submit: g.delay_type_submit,
-            output_line: g.delay_output_line,
-        }
-    }
+    /// The delay at the end of the animation.
+    ///
+    /// This is useful when looping/repeat is enabled and some time between
+    /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
+    /// desired. The units are in seconds (s).
+    #[structopt(
+        short = "E",
+        long = "end-delay",
+        default_value = DEFAULT_END_DELAY,
+        value_name = SECONDS_UNITS,
+        env = "GERM_END_DELAY"
+    )]
+    end: f64, // seconds
+
+    /// The delay before starting the simulated typing for the command.
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(
+        long = "delay-type-start",
+        default_value = DEFAULT_DELAY_TYPE_START,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_START"
+    )]
+    type_start: usize, // milliseconds
+
+    /// The delay between simulating typing of characters for the command.
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(
+        long = "delay-type-char",
+        default_value = DEFAULT_DELAY_TYPE_CHAR,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_CHAR"
+    )]
+    type_char: usize, // milliseconds
+
+    /// The delay between the simulated typing and output printing.
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(
+        long = "delay-type-submit",
+        default_value = DEFAULT_DELAY_TYPE_SUBMIT,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_TYPE_SUBMIT"
+    )]
+    type_submit: usize, // milliseconds
+
+    /// The delay between outputs for the command.
+    ///
+    /// The units are in milliseconds (ms).
+    #[structopt(
+        long = "delay-output-line",
+        default_value = DEFAULT_DELAY_OUTPUT_LINE,
+        value_name = MILLISECONDS_UNITS,
+        env = "GERM_DELAY_OUTPUT_LINE"
+    )]
+    output_line: usize, // milliseconds
 }
 
 impl Default for Timings {
@@ -379,49 +429,8 @@ struct Interactive {
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Generate terminal session recording files without rehearsing and recording")]
 struct Cli {
-    /// The delay before starting the simulated typing for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long,
-        default_value = DEFAULT_DELAY_TYPE_START,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_START"
-    )]
-    delay_type_start: usize,
-
-    /// The delay between simulating typing of characters for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long,
-        default_value = DEFAULT_DELAY_TYPE_CHAR,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_CHAR"
-    )]
-    delay_type_char: usize,
-
-    /// The delay between the simulated typing and output printing.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long,
-        default_value = DEFAULT_DELAY_TYPE_SUBMIT,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_SUBMIT"
-    )]
-    delay_type_submit: usize,
-
-    /// The delay between outputs for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long,
-        default_value = DEFAULT_DELAY_OUTPUT_LINE,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_OUTPUT_LINE"
-    )]
-    delay_output_line: usize,
+    #[structopt(flatten)]
+    timings: Timings,
 
     /// A comment about the command.
     ///
@@ -465,32 +474,6 @@ struct Cli {
         value_name = "rows"
     )]
     height: usize,
-
-    /// The delay before starting the animation.
-    ///
-    /// The units are in seconds (s).
-    #[structopt(
-        short = "B",
-        long,
-        default_value = DEFAULT_BEGIN_DELAY,
-        value_name = SECONDS_UNITS,
-        env = "GERM_BEGIN_DELAY"
-    )]
-    begin_delay: f64,
-
-    /// The delay at the end of the animation.
-    ///
-    /// This is useful when looping/repeat is enabled and some time between
-    /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
-    /// desired. The units are in seconds (s).
-    #[structopt(
-        short = "E",
-        long,
-        default_value = DEFAULT_END_DELAY,
-        value_name = SECONDS_UNITS,
-        env = "GERM_END_DELAY"
-    )]
-    end_delay: f64,
 
     /// The title for the asciicast file.
     #[structopt(short, long)]
@@ -589,7 +572,7 @@ impl Cli {
             self.read_from(BufReader::new(File::open(input_file)?))
         } else if atty::is(Stream::Stdin) {
             Ok(Sequence {
-                timings: Timings::from(self),
+                timings: self.timings,
                 ..Default::default()
             })
         } else {
@@ -604,7 +587,7 @@ impl Cli {
             InputFormats::TermSheets => {
                 let termsheets: Vec<termsheets::Command> = serde_json::from_reader(r)?;
                 Ok(Sequence {
-                    timings: Timings::from(self),
+                    timings: self.timings,
                     commands: termsheets
                         .into_iter()
                         .map(|c| Command {
@@ -663,22 +646,22 @@ impl Cli {
                 self.interactive_prompt = value_t!(matches, "interactive-prompt", String).unwrap();
             }
             if matches.occurrences_of("begin-delay") != 0 {
-                self.begin_delay = value_t!(matches, "begin-delay", f64).unwrap();
+                self.timings.begin = value_t!(matches, "begin-delay", f64).unwrap();
             }
             if matches.occurrences_of("delay-type-start") != 0 {
-                self.delay_type_start = value_t!(matches, "delay-type-start", usize).unwrap();
+                self.timings.type_start = value_t!(matches, "delay-type-start", usize).unwrap();
             }
             if matches.occurrences_of("delay-type-char") != 0 {
-                self.delay_type_char = value_t!(matches, "delay-type-char", usize).unwrap();
+                self.timings.type_char = value_t!(matches, "delay-type-char", usize).unwrap();
             }
             if matches.occurrences_of("delay-type-submit") != 0 {
-                self.delay_type_submit = value_t!(matches, "delay-type-start", usize).unwrap();
+                self.timings.type_submit = value_t!(matches, "delay-type-start", usize).unwrap();
             }
             if matches.occurrences_of("delay-output-line") != 0 {
-                self.delay_output_line = value_t!(matches, "delay-output-line", usize).unwrap();
+                self.timings.output_line = value_t!(matches, "delay-output-line", usize).unwrap();
             }
             if matches.occurrences_of("end-delay") != 0 {
-                self.end_delay = value_t!(matches, "end-delay", f64).unwrap();
+                self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
             }
             if matches.occurrences_of("title") != 0 {
                 self.title = value_t!(matches, "title", String).ok();
@@ -778,12 +761,12 @@ impl Cli {
                 .write_to(&mut writer)?;
                 let start_delay = sequence
                     .iter()
-                    .try_fold(self.begin_delay, |start_delay, command| {
+                    .try_fold(self.timings.begin, |start_delay, command| {
                         self.write_command(command, start_delay, &mut writer)
                     })?;
-                if self.end_delay.into_milliseconds() as usize != 0 {
+                if self.timings.end.into_milliseconds() as usize != 0 {
                     Hold {
-                        duration: self.end_delay,
+                        duration: self.timings.end,
                         start_delay,
                     }
                     .write_to(&mut writer)?;
@@ -802,14 +785,14 @@ impl Cli {
             Event(start_delay, EventKind::Printed, &comment).write_to(&mut writer)?;
         }
         Event(start_delay, EventKind::Printed, &command.prompt).write_to(&mut writer)?;
-        let input_time = ((self.delay_type_start
-            + self.delay_type_char * command.input.len()
-            + self.delay_type_submit) as f64)
+        let input_time = ((self.timings.type_start
+            + self.timings.type_char * command.input.len()
+            + self.timings.type_submit) as f64)
             .speed(self.speed)
             .into_seconds();
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
-                + ((self.delay_type_start + self.delay_type_char * i) as f64)
+                + ((self.timings.type_start + self.timings.type_char * i) as f64)
                     .speed(self.speed)
                     .into_seconds();
             if self.stdin {
@@ -820,7 +803,7 @@ impl Cli {
         for (i, output) in command.outputs.iter().enumerate() {
             let show_delay = start_delay
                 + input_time
-                + ((self.delay_output_line * (i + 1)) as f64)
+                + ((self.timings.output_line * (i + 1)) as f64)
                     .speed(self.speed)
                     .into_seconds();
             if i == 0 {
@@ -832,7 +815,7 @@ impl Cli {
                 Event(show_delay, EventKind::Printed, &output_data).write_to(&mut writer)?;
             }
         }
-        let outputs_time = ((self.delay_output_line * command.outputs.len()) as f64)
+        let outputs_time = ((self.timings.output_line * command.outputs.len()) as f64)
             .speed(self.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)
