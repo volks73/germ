@@ -717,31 +717,29 @@ impl Cli {
                 print_license();
             } else if matches.is_present("warranty") {
                 print_warranty();
-            } else {
-                if let Some(input) = matches.value_of("input") {
-                    if matches.is_present("outputs") {
-                        sequence.add(Command {
-                            comment: matches.value_of("comment").map(String::from),
-                            prompt: self.prompt.clone(),
-                            input: input.to_owned(),
-                            outputs: matches
-                                .values_of("outputs")
-                                .unwrap()
-                                .map(String::from)
-                                .collect(),
-                        });
-                    } else {
-                        let output = process::Command::new(Env::shell())
-                            .args(&["-c", &input])
-                            .output()?;
-                        sequence.add(Command {
-                            comment: matches.value_of("comment").map(String::from),
-                            prompt: self.prompt.clone(),
-                            input: input.to_owned(),
-                            outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
-                        });
-                        stdout.write_all(&output.stdout)?;
-                    }
+            } else if let Some(input) = matches.value_of("input") {
+                if matches.is_present("outputs") {
+                    sequence.add(Command {
+                        comment: matches.value_of("comment").map(String::from),
+                        prompt: self.prompt.clone(),
+                        input: input.to_owned(),
+                        outputs: matches
+                            .values_of("outputs")
+                            .unwrap()
+                            .map(String::from)
+                            .collect(),
+                    });
+                } else {
+                    let output = process::Command::new(Env::shell())
+                        .args(&["-c", &input])
+                        .output()?;
+                    sequence.add(Command {
+                        comment: matches.value_of("comment").map(String::from),
+                        prompt: self.prompt.clone(),
+                        input: input.to_owned(),
+                        outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
+                    });
+                    stdout.write_all(&output.stdout)?;
                 }
             }
             stdout.write_all(self.interactive_prompt.as_bytes())?;
