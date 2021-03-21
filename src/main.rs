@@ -848,10 +848,9 @@ This program comes with ABSOLUTELY NO WARRANTY; for details use the `--warranty`
 flag. This is free software, and you are welcome to redistirbute it under
 certain conditions; use the `--license` flag for details.
 
-You have entered interactive mode. Type a commmand as you would at the prompt
-and press <ENTER>. The command will be executed in a separate shell and the
-output from the command will be displayed on the next line(s). Each
-command-output pair will automatically be added to the sequence.
+You have entered interactive mode. The prompt has similar arguments, options,
+flags, and functionality to the command line interface. Use the --help flag to
+print the help text.
 
 Type CTRL+D (^D) to exit and generate output or CTRL+C (^C) to abort."#
     )
