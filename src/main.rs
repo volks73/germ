@@ -24,7 +24,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
 use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
-use structopt::clap::{self, value_t};
+use structopt::clap::{self, value_t, ArgMatches};
 use structopt::StructOpt;
 use strum::{EnumString, EnumVariantNames, VariantNames};
 
@@ -66,6 +66,15 @@ mod termsheets {
         }
     }
 
+    impl<'a> From<&'a super::Command> for Command {
+        fn from(c: &'a super::Command) -> Self {
+            Self {
+                input: c.input.clone(),
+                output: c.outputs.clone(),
+            }
+        }
+    }
+
     impl From<Command> for super::Command {
         fn from(c: Command) -> Self {
             Self {
@@ -80,6 +89,12 @@ mod termsheets {
     impl From<Sequence> for Vec<Command> {
         fn from(s: Sequence) -> Self {
             s.into_iter().map(Command::from).collect()
+        }
+    }
+
+    impl<'a> From<&'a Sequence> for Vec<Command> {
+        fn from(s: &'a Sequence) -> Self {
+            s.iter().map(Command::from).collect()
         }
     }
 
@@ -420,6 +435,15 @@ enum OutputFormats {
     Asciicast,
 }
 
+impl OutputFormats {
+    pub fn is_asciicast(&self) -> bool {
+        match self {
+            Self::Asciicast => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(settings(&[
     clap::AppSettings::NoBinaryName,
@@ -431,6 +455,12 @@ enum OutputFormats {
 struct Interactive {
     #[structopt(flatten)]
     cli: Cli,
+
+    /// Prints the current sequence.
+    ///
+    /// The format is determined by the last output format used.
+    #[structopt(long)]
+    print: bool,
 
     /// Prints help information.
     #[structopt(short = "h")]
@@ -676,71 +706,13 @@ impl Cli {
                         print_license();
                     } else if matches.is_present("warranty") {
                         print_warranty();
+                    } else if matches.is_present("print") {
+                        self.write_to(&mut stdout, &sequence)?;
+                        if !self.output_format.is_asciicast() {
+                            stdout.write_all(b"\n")?;
+                        }
                     } else {
-                        if matches.occurrences_of("interactive-prompt") != 0 {
-                            self.interactive_prompt =
-                                value_t!(matches, "interactive-prompt", String).unwrap();
-                        }
-                        if matches.occurrences_of("begin-delay") != 0 {
-                            self.timings.begin = value_t!(matches, "begin-delay", f64).unwrap();
-                        }
-                        if matches.occurrences_of("delay-type-start") != 0 {
-                            self.timings.type_start =
-                                value_t!(matches, "delay-type-start", usize).unwrap();
-                        }
-                        if matches.occurrences_of("delay-type-char") != 0 {
-                            self.timings.type_char =
-                                value_t!(matches, "delay-type-char", usize).unwrap();
-                        }
-                        if matches.occurrences_of("delay-type-submit") != 0 {
-                            self.timings.type_submit =
-                                value_t!(matches, "delay-type-start", usize).unwrap();
-                        }
-                        if matches.occurrences_of("delay-output-line") != 0 {
-                            self.timings.output_line =
-                                value_t!(matches, "delay-output-line", usize).unwrap();
-                        }
-                        if matches.occurrences_of("end-delay") != 0 {
-                            self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
-                        }
-                        if matches.occurrences_of("title") != 0 {
-                            self.title = value_t!(matches, "title", String).ok();
-                        }
-                        if matches.occurrences_of("width") != 0 {
-                            self.width = value_t!(matches, "width", usize).unwrap();
-                        }
-                        if matches.occurrences_of("height") != 0 {
-                            self.height = value_t!(matches, "height", usize).unwrap();
-                        }
-                        if matches.occurrences_of("input-format") != 0 {
-                            self.input_format =
-                                value_t!(matches, "input-format", InputFormats).unwrap();
-                        }
-                        if matches.occurrences_of("output-format") != 0 {
-                            self.output_format =
-                                value_t!(matches, "output-format", OutputFormats).unwrap();
-                        }
-                        if matches.occurrences_of("output-file") != 0 {
-                            self.output_file = value_t!(matches, "output-file", PathBuf).ok();
-                        }
-                        if matches.occurrences_of("prompt") != 0 {
-                            self.prompt = value_t!(matches, "prompt", String).unwrap();
-                        }
-                        if matches.occurrences_of("speed") != 0 {
-                            self.speed = value_t!(matches, "speed", f64).unwrap();
-                        }
-                        if matches.occurrences_of("shell") != 0 {
-                            self.shell = value_t!(matches, "shell", String).unwrap();
-                        }
-                        if matches.occurrences_of("term") != 0 {
-                            self.shell = value_t!(matches, "shell", String).unwrap();
-                        }
-                        if matches.occurrences_of("stdin") != 0 {
-                            self.stdin = true;
-                        }
-                        if matches.occurrences_of("use-germ-format") != 0 {
-                            self.use_germ_format = true;
-                        }
+                        self.update_from(&matches);
                         if let Some(input_file) = matches.value_of("input-file").map(PathBuf::from)
                         {
                             let Sequence { commands, .. } =
@@ -787,11 +759,15 @@ impl Cli {
     }
 
     fn write(&self, sequence: Sequence) -> Result<()> {
-        let mut writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
+        let writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
         } else {
             Box::new(io::stdout())
         };
+        self.write_to(writer, &sequence)
+    }
+
+    fn write_to<W: Write>(&self, mut writer: W, sequence: &Sequence) -> Result<()> {
         match self.output_format {
             OutputFormats::Germ => {
                 serde_json::to_writer(&mut writer, &sequence)?;
@@ -872,6 +848,66 @@ impl Cli {
             .speed(self.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)
+    }
+
+    fn update_from(&mut self, matches: &ArgMatches) {
+        if matches.occurrences_of("interactive-prompt") != 0 {
+            self.interactive_prompt = value_t!(matches, "interactive-prompt", String).unwrap();
+        }
+        if matches.occurrences_of("begin-delay") != 0 {
+            self.timings.begin = value_t!(matches, "begin-delay", f64).unwrap();
+        }
+        if matches.occurrences_of("delay-type-start") != 0 {
+            self.timings.type_start = value_t!(matches, "delay-type-start", usize).unwrap();
+        }
+        if matches.occurrences_of("delay-type-char") != 0 {
+            self.timings.type_char = value_t!(matches, "delay-type-char", usize).unwrap();
+        }
+        if matches.occurrences_of("delay-type-submit") != 0 {
+            self.timings.type_submit = value_t!(matches, "delay-type-start", usize).unwrap();
+        }
+        if matches.occurrences_of("delay-output-line") != 0 {
+            self.timings.output_line = value_t!(matches, "delay-output-line", usize).unwrap();
+        }
+        if matches.occurrences_of("end-delay") != 0 {
+            self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
+        }
+        if matches.occurrences_of("title") != 0 {
+            self.title = value_t!(matches, "title", String).ok();
+        }
+        if matches.occurrences_of("width") != 0 {
+            self.width = value_t!(matches, "width", usize).unwrap();
+        }
+        if matches.occurrences_of("height") != 0 {
+            self.height = value_t!(matches, "height", usize).unwrap();
+        }
+        if matches.occurrences_of("input-format") != 0 {
+            self.input_format = value_t!(matches, "input-format", InputFormats).unwrap();
+        }
+        if matches.occurrences_of("output-format") != 0 {
+            self.output_format = value_t!(matches, "output-format", OutputFormats).unwrap();
+        }
+        if matches.occurrences_of("output-file") != 0 {
+            self.output_file = value_t!(matches, "output-file", PathBuf).ok();
+        }
+        if matches.occurrences_of("prompt") != 0 {
+            self.prompt = value_t!(matches, "prompt", String).unwrap();
+        }
+        if matches.occurrences_of("speed") != 0 {
+            self.speed = value_t!(matches, "speed", f64).unwrap();
+        }
+        if matches.occurrences_of("shell") != 0 {
+            self.shell = value_t!(matches, "shell", String).unwrap();
+        }
+        if matches.occurrences_of("term") != 0 {
+            self.shell = value_t!(matches, "shell", String).unwrap();
+        }
+        if matches.occurrences_of("stdin") != 0 {
+            self.stdin = true;
+        }
+        if matches.occurrences_of("use-germ-format") != 0 {
+            self.use_germ_format = true;
+        }
     }
 }
 
