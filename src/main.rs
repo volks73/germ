@@ -232,9 +232,10 @@ impl Cli {
                 sequence.append(
                     &mut termsheets
                         .into_iter()
-                        .map(|c| Command {
-                            prompt: self.prompt.clone(),
-                            ..Command::from(c)
+                        .map(|c| {
+                            let mut cmd = Command::from(c);
+                            cmd.set_prompt(&self.prompt);
+                            cmd
                         })
                         .collect(),
                 );
@@ -254,7 +255,7 @@ impl Cli {
     }
 
     fn append_arguments(&self, sequence: &mut Sequence, input: &str) -> Result<()> {
-        let outputs = if self.outputs.is_empty() {
+        let mut outputs = if self.outputs.is_empty() {
             let output = process::Command::new(Env::shell())
                 .args(&["-c", input])
                 .output()?;
@@ -262,11 +263,12 @@ impl Cli {
         } else {
             self.outputs.clone()
         };
-        sequence.add(Command {
-            comment: self.comment.clone(),
-            prompt: self.prompt.clone(),
-            input: input.to_owned(),
-            outputs,
+        sequence.add({
+            let mut cmd = Command::from(input);
+            cmd.set_comment(self.comment.as_deref());
+            cmd.set_prompt(&self.prompt);
+            cmd.append(&mut outputs);
+            cmd
         });
         Ok(())
     }
@@ -312,29 +314,28 @@ impl Cli {
                             );
                         }
                         if let Some(input) = matches.value_of("input") {
-                            if matches.is_present("outputs") {
-                                sequence.add(Command {
-                                    comment: matches.value_of("comment").map(String::from),
-                                    prompt: self.prompt.clone(),
-                                    input: input.to_owned(),
-                                    outputs: matches
-                                        .values_of("outputs")
-                                        .unwrap()
-                                        .map(String::from)
-                                        .collect(),
-                                });
+                            let mut outputs = if matches.is_present("outputs") {
+                                matches
+                                    .values_of("outputs")
+                                    .unwrap()
+                                    .map(String::from)
+                                    .collect()
                             } else {
                                 let output = process::Command::new(Env::shell())
                                     .args(&["-c", &input])
                                     .output()?;
-                                sequence.add(Command {
-                                    comment: matches.value_of("comment").map(String::from),
-                                    prompt: self.prompt.clone(),
-                                    input: input.to_owned(),
-                                    outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
-                                });
                                 stdout.write_all(&output.stdout)?;
-                            }
+                                vec![std::str::from_utf8(&output.stdout)?.to_owned()]
+                            };
+                            sequence.add({
+                                let mut cmd = Command::from(input);
+                                cmd.set_comment(
+                                    matches.value_of("comment").map(String::from).as_deref(),
+                                );
+                                cmd.set_prompt(&self.prompt);
+                                cmd.append(&mut outputs);
+                                cmd
+                            });
                         }
                     }
                 }
@@ -399,17 +400,18 @@ impl Cli {
     where
         W: Write,
     {
-        if let Some(mut comment) = command.comment.clone() {
+        if let Some(c) = command.comment() {
+            let mut comment = c.to_owned();
             comment.push_str("\r\n");
             Event(start_delay, EventKind::Printed, &comment).write_to(&mut writer)?;
         }
-        Event(start_delay, EventKind::Printed, &command.prompt).write_to(&mut writer)?;
+        Event(start_delay, EventKind::Printed, &command.prompt()).write_to(&mut writer)?;
         let input_time = ((self.timings.type_start
-            + self.timings.type_char * command.input.len()
+            + self.timings.type_char * command.input().len()
             + self.timings.type_submit) as f64)
             .speed(self.timings.speed)
             .into_seconds();
-        for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
+        for (i, c) in command.input().chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
                 + ((self.timings.type_start + self.timings.type_char * i) as f64)
                     .speed(self.timings.speed)
@@ -419,7 +421,7 @@ impl Cli {
             }
             Event(char_delay, EventKind::Printed, &c).write_to(&mut writer)?;
         }
-        for (i, output) in command.outputs.iter().enumerate() {
+        for (i, output) in command.outputs().iter().enumerate() {
             let show_delay = start_delay
                 + input_time
                 + ((self.timings.output_line * (i + 1)) as f64)
@@ -434,7 +436,7 @@ impl Cli {
                 Event(show_delay, EventKind::Printed, &output_data).write_to(&mut writer)?;
             }
         }
-        let outputs_time = ((self.timings.output_line * command.outputs.len()) as f64)
+        let outputs_time = ((self.timings.output_line * command.outputs().len()) as f64)
             .speed(self.timings.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)

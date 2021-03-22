@@ -181,8 +181,72 @@ impl Default for Sequence {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Command {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub comment: Option<String>,
-    pub prompt: String,
-    pub input: String,
-    pub outputs: Vec<String>,
+    comment: Option<String>,
+    prompt: String,
+    input: String,
+    outputs: Vec<String>,
+}
+
+impl Command {
+    pub fn set_comment(&mut self, c: Option<&str>) -> &mut Self {
+        self.comment = c.map(|s| s.to_owned());
+        self
+    }
+
+    pub fn comment(&self) -> Option<&str> {
+        self.comment.as_deref()
+    }
+
+    pub fn set_prompt(&mut self, p: &str) -> &mut Self {
+        self.prompt = p.to_owned();
+        self
+    }
+
+    pub fn prompt(&self) -> &str {
+        &self.prompt
+    }
+
+    pub fn add(&mut self, output: &str) -> &mut Self {
+        self.outputs.push(output.to_owned());
+        self
+    }
+
+    pub fn append(&mut self, outputs: &mut Vec<String>) -> &mut Self {
+        self.outputs.append(outputs);
+        self
+    }
+
+    pub fn input(&self) -> &str {
+        &self.input
+    }
+
+    pub fn outputs(&self) -> &Vec<String> {
+        &self.outputs
+    }
+
+    pub fn into_outputs(self) -> Vec<String> {
+        self.outputs
+    }
+}
+
+impl From<String> for Command {
+    fn from(s: String) -> Self {
+        Self {
+            comment: None,
+            prompt: String::from(DEFAULT_PROMPT),
+            input: s,
+            outputs: Vec::new(),
+        }
+    }
+}
+
+impl<'a> From<&'a str> for Command {
+    fn from(s: &'a str) -> Self {
+        Self {
+            comment: None,
+            prompt: String::from(DEFAULT_PROMPT),
+            input: s.to_owned(),
+            outputs: Vec::new(),
+        }
+    }
 }

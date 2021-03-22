@@ -15,7 +15,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::sequence::{Sequence, DEFAULT_PROMPT};
+use crate::sequence::Sequence;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Command {
@@ -26,8 +26,8 @@ pub struct Command {
 impl From<crate::sequence::Command> for Command {
     fn from(c: crate::sequence::Command) -> Self {
         Self {
-            input: c.input,
-            output: c.outputs,
+            input: c.input().to_owned(),
+            output: c.into_outputs(),
         }
     }
 }
@@ -35,20 +35,17 @@ impl From<crate::sequence::Command> for Command {
 impl<'a> From<&'a crate::sequence::Command> for Command {
     fn from(c: &'a crate::sequence::Command) -> Self {
         Self {
-            input: c.input.clone(),
-            output: c.outputs.clone(),
+            input: c.input().to_owned(),
+            output: c.outputs().clone(),
         }
     }
 }
 
 impl From<Command> for crate::sequence::Command {
-    fn from(c: Command) -> Self {
-        Self {
-            comment: None,
-            prompt: String::from(DEFAULT_PROMPT),
-            input: c.input,
-            outputs: c.output,
-        }
+    fn from(mut c: Command) -> Self {
+        let mut cmd = Self::from(c.input);
+        cmd.append(&mut c.output);
+        cmd
     }
 }
 
