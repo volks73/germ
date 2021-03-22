@@ -314,7 +314,7 @@ struct Theme {
 }
 
 #[derive(Debug, Serialize)]
-struct Header<'a> {
+struct Header {
     version: usize,
     width: usize,
     height: usize,
@@ -332,7 +332,7 @@ struct Header<'a> {
     command: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<&'a str>,
+    title: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     env: Option<Env>,
@@ -341,7 +341,7 @@ struct Header<'a> {
     theme: Option<Theme>,
 }
 
-impl<'a> Header<'a> {
+impl Header {
     pub fn write_to<W>(&self, mut writer: W) -> Result<()>
     where
         W: Write,
@@ -352,7 +352,7 @@ impl<'a> Header<'a> {
     }
 }
 
-impl<'a> Default for Header<'a> {
+impl Default for Header {
     fn default() -> Self {
         Self {
             version: ASCIICAST_VERSION,
@@ -433,15 +433,6 @@ enum OutputFormats {
     Germ,
     TermSheets,
     Asciicast,
-}
-
-impl OutputFormats {
-    pub fn is_asciicast(&self) -> bool {
-        match self {
-            Self::Asciicast => true,
-            _ => false,
-        }
-    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -708,7 +699,7 @@ impl Cli {
                         print_warranty();
                     } else if matches.is_present("print") {
                         self.write_to(&mut stdout, &sequence)?;
-                        if !self.output_format.is_asciicast() {
+                        if !matches!(self.output_format, OutputFormats::Asciicast) {
                             stdout.write_all(b"\n")?;
                         }
                     } else {
@@ -780,7 +771,7 @@ impl Cli {
                 Header {
                     width: self.width,
                     height: self.height,
-                    title: self.title.as_deref(),
+                    title: self.title.clone(),
                     env: Some(Env {
                         shell: self.shell.clone(),
                         term: self.term.clone(),
