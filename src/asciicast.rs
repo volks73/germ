@@ -16,7 +16,7 @@
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{MILLISECONDS_IN_A_SECOND, SHELL_VAR_NAME, TERM_VAR_NAME};
+use crate::sequence::{Command, Sequence, Timings};
 use std::env;
 use std::fmt;
 use std::io::Write;
@@ -28,6 +28,10 @@ pub const DEFAULT_HEIGHT: usize = 55;
 pub const DEFAULT_SHELL: &str = "/bin/bash";
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: usize = 188;
+pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
+pub const MILLISECONDS_UNITS: &str = "ms";
+pub const SHELL_VAR_NAME: &str = "SHELL";
+pub const TERM_VAR_NAME: &str = "TERM";
 
 #[derive(Debug, Serialize, StructOpt)]
 pub struct Env {
@@ -211,6 +215,69 @@ impl Asciicast {
         self
     }
 
+    pub fn append_from(&mut self, sequence: &Sequence) -> &mut Self {
+        let start_delay = sequence
+            .iter()
+            .fold(sequence.timings().begin, |start_delay, command| {
+                self.add_command(command, sequence.timings(), start_delay)
+            });
+        if sequence.timings().end.into_milliseconds() as usize != 0 {
+            self.add(Event(
+                start_delay + sequence.timings().end,
+                EventKind::Printed,
+                String::new(),
+            ));
+        }
+        self
+    }
+
+    fn add_command(&mut self, command: &Command, timings: &Timings, start_delay: f64) -> f64 {
+        if let Some(c) = command.comment() {
+            let mut comment = c.to_owned();
+            comment.push_str("\r\n");
+            self.add(Event(start_delay, EventKind::Printed, comment));
+        }
+        self.add(Event(
+            start_delay,
+            EventKind::Printed,
+            command.prompt().to_owned(),
+        ));
+        let input_time = ((timings.type_start
+            + timings.type_char * command.input().len()
+            + timings.type_submit) as f64)
+            .speed(timings.speed)
+            .into_seconds();
+        for (i, c) in command.input().chars().map(|c| c.to_string()).enumerate() {
+            let char_delay = start_delay
+                + ((timings.type_start + timings.type_char * i) as f64)
+                    .speed(timings.speed)
+                    .into_seconds();
+            if self.stdin {
+                self.add(Event(char_delay, EventKind::Keypress, c.clone()));
+            }
+            self.add(Event(char_delay, EventKind::Printed, c));
+        }
+        for (i, output) in command.outputs().iter().enumerate() {
+            let show_delay = start_delay
+                + input_time
+                + ((timings.output_line * (i + 1)) as f64)
+                    .speed(timings.speed)
+                    .into_seconds();
+            if i == 0 {
+                self.add(Event(show_delay, EventKind::Printed, String::from("\r\n")));
+            }
+            for line in output.lines() {
+                let mut output_data = String::from(line);
+                output_data.push_str("\r\n");
+                self.add(Event(show_delay, EventKind::Printed, output_data));
+            }
+        }
+        let outputs_time = ((timings.output_line * command.outputs().len()) as f64)
+            .speed(timings.speed)
+            .into_seconds();
+        start_delay + input_time + outputs_time
+    }
+
     pub fn events(&self) -> &Vec<Event> {
         &self.events
     }
@@ -231,5 +298,39 @@ impl Default for Asciicast {
             events: Vec::new(),
             stdin: false,
         }
+    }
+}
+
+trait ApplySpeed {
+    type Output;
+
+    fn speed(self, speed: f64) -> Self::Output;
+}
+
+impl ApplySpeed for f64 {
+    type Output = Self;
+
+    fn speed(self, speed: f64) -> Self::Output {
+        self / speed
+    }
+}
+
+trait SecondsConversions {
+    type Output;
+
+    fn into_seconds(self) -> Self::Output;
+
+    fn into_milliseconds(self) -> Self::Output;
+}
+
+impl SecondsConversions for f64 {
+    type Output = Self;
+
+    fn into_seconds(self) -> Self::Output {
+        self / MILLISECONDS_IN_A_SECOND
+    }
+
+    fn into_milliseconds(self) -> Self::Output {
+        self * MILLISECONDS_IN_A_SECOND
     }
 }

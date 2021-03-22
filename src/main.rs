@@ -15,9 +15,8 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Asciicast, Env, Event, EventKind};
+use germ::asciicast::{Asciicast, Env};
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
-use germ::{ApplySpeed, SecondsConversions};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -81,6 +80,9 @@ struct Cli {
     #[structopt(flatten)]
     timings: Timings,
 
+    #[structopt(flatten)]
+    asciicast: Asciicast,
+
     /// A comment about the command.
     ///
     /// A line will be "printed" in the terminal session above the prompt and input.
@@ -94,9 +96,6 @@ struct Cli {
     /// The prompt displayed in interactive mode.
     #[structopt(short ="P", long, default_value = DEFAULT_INTERACTIVE_PROMPT, env = "GERM_INTERACTIVE_PROMPT")]
     interactive_prompt: String,
-
-    #[structopt(flatten)]
-    asciicast: Asciicast,
 
     /// Use the Germ JSON format for the output.
     ///
@@ -342,73 +341,12 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
-                let start_delay = sequence
-                    .iter()
-                    .try_fold(sequence.timings().begin, |start_delay, command| {
-                        self.add_command(command, start_delay)
-                    })?;
-                if self.timings.end.into_milliseconds() as usize != 0 {
-                    self.asciicast.add(Event(
-                        start_delay + sequence.timings().end,
-                        EventKind::Printed,
-                        String::new(),
-                    ));
-                }
-                self.asciicast.write_to(&mut writer)?;
+                self.asciicast
+                    .append_from(&sequence)
+                    .write_to(&mut writer)?;
             }
         }
         Ok(())
-    }
-
-    fn add_command(&mut self, command: &Command, start_delay: f64) -> Result<f64> {
-        if let Some(c) = command.comment() {
-            let mut comment = c.to_owned();
-            comment.push_str("\r\n");
-            self.asciicast
-                .add(Event(start_delay, EventKind::Printed, comment));
-        }
-        self.asciicast.add(Event(
-            start_delay,
-            EventKind::Printed,
-            command.prompt().to_owned(),
-        ));
-        let input_time = ((self.timings.type_start
-            + self.timings.type_char * command.input().len()
-            + self.timings.type_submit) as f64)
-            .speed(self.timings.speed)
-            .into_seconds();
-        for (i, c) in command.input().chars().map(|c| c.to_string()).enumerate() {
-            let char_delay = start_delay
-                + ((self.timings.type_start + self.timings.type_char * i) as f64)
-                    .speed(self.timings.speed)
-                    .into_seconds();
-            if self.asciicast.stdin {
-                self.asciicast
-                    .add(Event(char_delay, EventKind::Keypress, c.clone()));
-            }
-            self.asciicast.add(Event(char_delay, EventKind::Printed, c));
-        }
-        for (i, output) in command.outputs().iter().enumerate() {
-            let show_delay = start_delay
-                + input_time
-                + ((self.timings.output_line * (i + 1)) as f64)
-                    .speed(self.timings.speed)
-                    .into_seconds();
-            if i == 0 {
-                self.asciicast
-                    .add(Event(show_delay, EventKind::Printed, String::from("\r\n")));
-            }
-            for line in output.lines() {
-                let mut output_data = String::from(line);
-                output_data.push_str("\r\n");
-                self.asciicast
-                    .add(Event(show_delay, EventKind::Printed, output_data));
-            }
-        }
-        let outputs_time = ((self.timings.output_line * command.outputs().len()) as f64)
-            .speed(self.timings.speed)
-            .into_seconds();
-        Ok(start_delay + input_time + outputs_time)
     }
 
     fn update_from(&mut self, matches: &ArgMatches) {

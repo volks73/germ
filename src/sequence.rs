@@ -25,6 +25,8 @@ pub const DEFAULT_DELAY_TYPE_START: &str = "750";
 pub const DEFAULT_DELAY_TYPE_CHAR: &str = "35";
 pub const DEFAULT_DELAY_TYPE_SUBMIT: &str = "350";
 pub const DEFAULT_DELAY_OUTPUT_LINE: &str = "500";
+pub const MILLISECONDS_UNITS: &str = "ms";
+pub const SECONDS_UNITS: &str = "secs";
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, StructOpt)]
 pub struct Timings {
@@ -35,7 +37,7 @@ pub struct Timings {
         short = "B",
         long = "begin-delay",
         default_value = DEFAULT_BEGIN_DELAY,
-        value_name = crate::SECONDS_UNITS,
+        value_name = SECONDS_UNITS,
         env = "GERM_BEGIN_DELAY"
     )]
     pub begin: f64, // seconds
@@ -49,7 +51,7 @@ pub struct Timings {
         short = "E",
         long = "end-delay",
         default_value = DEFAULT_END_DELAY,
-        value_name = crate::SECONDS_UNITS,
+        value_name = SECONDS_UNITS,
         env = "GERM_END_DELAY"
     )]
     pub end: f64, // seconds
@@ -60,7 +62,7 @@ pub struct Timings {
     #[structopt(
         long = "delay-type-start",
         default_value = DEFAULT_DELAY_TYPE_START,
-        value_name = crate::MILLISECONDS_UNITS,
+        value_name = MILLISECONDS_UNITS,
         env = "GERM_DELAY_TYPE_START"
     )]
     pub type_start: usize, // milliseconds
@@ -71,7 +73,7 @@ pub struct Timings {
     #[structopt(
         long = "delay-type-char",
         default_value = DEFAULT_DELAY_TYPE_CHAR,
-        value_name = crate::MILLISECONDS_UNITS,
+        value_name = MILLISECONDS_UNITS,
         env = "GERM_DELAY_TYPE_CHAR"
     )]
     pub type_char: usize, // milliseconds
@@ -82,7 +84,7 @@ pub struct Timings {
     #[structopt(
         long = "delay-type-submit",
         default_value = DEFAULT_DELAY_TYPE_SUBMIT,
-        value_name = crate::MILLISECONDS_UNITS,
+        value_name = MILLISECONDS_UNITS,
         env = "GERM_DELAY_TYPE_SUBMIT"
     )]
     pub type_submit: usize, // milliseconds
@@ -93,7 +95,7 @@ pub struct Timings {
     #[structopt(
         long = "delay-output-line",
         default_value = DEFAULT_DELAY_OUTPUT_LINE,
-        value_name = crate::MILLISECONDS_UNITS,
+        value_name = MILLISECONDS_UNITS,
         env = "GERM_DELAY_OUTPUT_LINE",
         hide_env_values = true
     )]
