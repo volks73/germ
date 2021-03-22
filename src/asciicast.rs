@@ -149,9 +149,9 @@ impl fmt::Display for EventKind {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Event<'a>(pub f64, pub EventKind, pub &'a str);
+pub struct Event(pub f64, pub EventKind, pub String);
 
-impl<'a> Event<'a> {
+impl Event {
     pub fn write_to<W>(&mut self, mut writer: W) -> Result<()>
     where
         W: Write,
@@ -174,6 +174,16 @@ impl Hold {
     where
         W: Write,
     {
-        Event(self.start_delay + self.duration, EventKind::Printed, "").write_to(&mut writer)
+        Event(
+            self.start_delay + self.duration,
+            EventKind::Printed,
+            String::new(),
+        )
+        .write_to(&mut writer)
     }
+}
+
+pub struct Asciicast {
+    pub header: Header,
+    pub event_stream: Vec<Event>,
 }

@@ -403,9 +403,10 @@ impl Cli {
         if let Some(c) = command.comment() {
             let mut comment = c.to_owned();
             comment.push_str("\r\n");
-            Event(start_delay, EventKind::Printed, &comment).write_to(&mut writer)?;
+            Event(start_delay, EventKind::Printed, comment).write_to(&mut writer)?;
         }
-        Event(start_delay, EventKind::Printed, &command.prompt()).write_to(&mut writer)?;
+        Event(start_delay, EventKind::Printed, command.prompt().to_owned())
+            .write_to(&mut writer)?;
         let input_time = ((self.timings.type_start
             + self.timings.type_char * command.input().len()
             + self.timings.type_submit) as f64)
@@ -417,9 +418,9 @@ impl Cli {
                     .speed(self.timings.speed)
                     .into_seconds();
             if self.stdin {
-                Event(char_delay, EventKind::Keypress, &c).write_to(&mut writer)?;
+                Event(char_delay, EventKind::Keypress, c.clone()).write_to(&mut writer)?;
             }
-            Event(char_delay, EventKind::Printed, &c).write_to(&mut writer)?;
+            Event(char_delay, EventKind::Printed, c).write_to(&mut writer)?;
         }
         for (i, output) in command.outputs().iter().enumerate() {
             let show_delay = start_delay
@@ -428,12 +429,13 @@ impl Cli {
                     .speed(self.timings.speed)
                     .into_seconds();
             if i == 0 {
-                Event(show_delay, EventKind::Printed, "\r\n").write_to(&mut writer)?;
+                Event(show_delay, EventKind::Printed, String::from("\r\n"))
+                    .write_to(&mut writer)?;
             }
             for line in output.lines() {
                 let mut output_data = String::from(line);
                 output_data.push_str("\r\n");
-                Event(show_delay, EventKind::Printed, &output_data).write_to(&mut writer)?;
+                Event(show_delay, EventKind::Printed, output_data).write_to(&mut writer)?;
             }
         }
         let outputs_time = ((self.timings.output_line * command.outputs().len()) as f64)
