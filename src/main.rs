@@ -195,7 +195,8 @@ struct Timings {
         long = "delay-output-line",
         default_value = DEFAULT_DELAY_OUTPUT_LINE,
         value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_OUTPUT_LINE"
+        env = "GERM_DELAY_OUTPUT_LINE",
+        hide_env_values = true
     )]
     output_line: usize, // milliseconds
 }
@@ -420,10 +421,28 @@ enum OutputFormats {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(setting(clap::AppSettings::NoBinaryName))]
+#[structopt(settings(&[
+    clap::AppSettings::NoBinaryName,
+    clap::AppSettings::DisableHelpFlags,
+    clap::AppSettings::DisableVersion,
+    clap::AppSettings::NextLineHelp]),
+    usage("[FLAGS] [OPTIONS] [INPUT] [OUTPUTS...]")
+)]
 struct Interactive {
     #[structopt(flatten)]
     cli: Cli,
+
+    /// Prints help information.
+    #[structopt(short = "h")]
+    short_help: bool,
+
+    /// Prints more help information.
+    #[structopt(long = "help")]
+    long_help: bool,
+
+    /// Prints version information.
+    #[structopt(short = "V", long = "version")]
+    version: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -639,91 +658,114 @@ impl Cli {
         for line in io::stdin().lock().lines() {
             // TODO: Capture error and print instead of failing.
             let words = shellwords::split(&line.expect("stdin line"))?;
-            // TODO: Add `--no-print` flag to app. This does not write the
-            // explicit outputs or the output from the command execution.
-            let matches = Interactive::clap().get_matches_from(words);
-            if matches.occurrences_of("interactive-prompt") != 0 {
-                self.interactive_prompt = value_t!(matches, "interactive-prompt", String).unwrap();
-            }
-            if matches.occurrences_of("begin-delay") != 0 {
-                self.timings.begin = value_t!(matches, "begin-delay", f64).unwrap();
-            }
-            if matches.occurrences_of("delay-type-start") != 0 {
-                self.timings.type_start = value_t!(matches, "delay-type-start", usize).unwrap();
-            }
-            if matches.occurrences_of("delay-type-char") != 0 {
-                self.timings.type_char = value_t!(matches, "delay-type-char", usize).unwrap();
-            }
-            if matches.occurrences_of("delay-type-submit") != 0 {
-                self.timings.type_submit = value_t!(matches, "delay-type-start", usize).unwrap();
-            }
-            if matches.occurrences_of("delay-output-line") != 0 {
-                self.timings.output_line = value_t!(matches, "delay-output-line", usize).unwrap();
-            }
-            if matches.occurrences_of("end-delay") != 0 {
-                self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
-            }
-            if matches.occurrences_of("title") != 0 {
-                self.title = value_t!(matches, "title", String).ok();
-            }
-            if matches.occurrences_of("width") != 0 {
-                self.width = value_t!(matches, "width", usize).unwrap();
-            }
-            if matches.occurrences_of("height") != 0 {
-                self.height = value_t!(matches, "height", usize).unwrap();
-            }
-            if matches.occurrences_of("output-format") != 0 {
-                self.output_format = value_t!(matches, "output-format", OutputFormats).unwrap();
-            }
-            if matches.occurrences_of("output-file") != 0 {
-                self.output_file = value_t!(matches, "output-file", PathBuf).ok();
-            }
-            if matches.occurrences_of("prompt") != 0 {
-                self.prompt = value_t!(matches, "prompt", String).unwrap();
-            }
-            if matches.occurrences_of("speed") != 0 {
-                self.speed = value_t!(matches, "speed", f64).unwrap();
-            }
-            if matches.occurrences_of("shell") != 0 {
-                self.shell = value_t!(matches, "shell", String).unwrap();
-            }
-            if matches.occurrences_of("term") != 0 {
-                self.shell = value_t!(matches, "shell", String).unwrap();
-            }
-            if matches.occurrences_of("stdin") != 0 {
-                self.stdin = true;
-            }
-            if matches.occurrences_of("use-germ-format") != 0 {
-                self.use_germ_format = true;
-            }
-            if matches.is_present("license") {
-                print_license();
-            } else if matches.is_present("warranty") {
-                print_warranty();
-            } else if let Some(input) = matches.value_of("input") {
-                if matches.is_present("outputs") {
-                    sequence.add(Command {
-                        comment: matches.value_of("comment").map(String::from),
-                        prompt: self.prompt.clone(),
-                        input: input.to_owned(),
-                        outputs: matches
-                            .values_of("outputs")
-                            .unwrap()
-                            .map(String::from)
-                            .collect(),
-                    });
-                } else {
-                    let output = process::Command::new(Env::shell())
-                        .args(&["-c", &input])
-                        .output()?;
-                    sequence.add(Command {
-                        comment: matches.value_of("comment").map(String::from),
-                        prompt: self.prompt.clone(),
-                        input: input.to_owned(),
-                        outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
-                    });
-                    stdout.write_all(&output.stdout)?;
+            let mut app = Interactive::clap();
+            match app.get_matches_from_safe_borrow(words) {
+                Ok(matches) => {
+                    if matches.is_present("short-help") {
+                        app.write_help(&mut stdout)?;
+                        stdout.write_all(b"\n")?;
+                    } else if matches.is_present("long-help") {
+                        app.write_long_help(&mut stdout)?;
+                        stdout.write_all(b"\n")?;
+                    } else if matches.is_present("short-version") {
+                        app.write_version(&mut stdout)?;
+                        stdout.write_all(b"\n")?;
+                    } else if matches.is_present("long-version") {
+                        app.write_long_version(&mut stdout)?;
+                        stdout.write_all(b"\n")?;
+                    } else if matches.is_present("license") {
+                        print_license();
+                    } else if matches.is_present("warranty") {
+                        print_warranty();
+                    } else {
+                        if matches.occurrences_of("interactive-prompt") != 0 {
+                            self.interactive_prompt =
+                                value_t!(matches, "interactive-prompt", String).unwrap();
+                        }
+                        if matches.occurrences_of("begin-delay") != 0 {
+                            self.timings.begin = value_t!(matches, "begin-delay", f64).unwrap();
+                        }
+                        if matches.occurrences_of("delay-type-start") != 0 {
+                            self.timings.type_start =
+                                value_t!(matches, "delay-type-start", usize).unwrap();
+                        }
+                        if matches.occurrences_of("delay-type-char") != 0 {
+                            self.timings.type_char =
+                                value_t!(matches, "delay-type-char", usize).unwrap();
+                        }
+                        if matches.occurrences_of("delay-type-submit") != 0 {
+                            self.timings.type_submit =
+                                value_t!(matches, "delay-type-start", usize).unwrap();
+                        }
+                        if matches.occurrences_of("delay-output-line") != 0 {
+                            self.timings.output_line =
+                                value_t!(matches, "delay-output-line", usize).unwrap();
+                        }
+                        if matches.occurrences_of("end-delay") != 0 {
+                            self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
+                        }
+                        if matches.occurrences_of("title") != 0 {
+                            self.title = value_t!(matches, "title", String).ok();
+                        }
+                        if matches.occurrences_of("width") != 0 {
+                            self.width = value_t!(matches, "width", usize).unwrap();
+                        }
+                        if matches.occurrences_of("height") != 0 {
+                            self.height = value_t!(matches, "height", usize).unwrap();
+                        }
+                        if matches.occurrences_of("output-format") != 0 {
+                            self.output_format =
+                                value_t!(matches, "output-format", OutputFormats).unwrap();
+                        }
+                        if matches.occurrences_of("output-file") != 0 {
+                            self.output_file = value_t!(matches, "output-file", PathBuf).ok();
+                        }
+                        if matches.occurrences_of("prompt") != 0 {
+                            self.prompt = value_t!(matches, "prompt", String).unwrap();
+                        }
+                        if matches.occurrences_of("speed") != 0 {
+                            self.speed = value_t!(matches, "speed", f64).unwrap();
+                        }
+                        if matches.occurrences_of("shell") != 0 {
+                            self.shell = value_t!(matches, "shell", String).unwrap();
+                        }
+                        if matches.occurrences_of("term") != 0 {
+                            self.shell = value_t!(matches, "shell", String).unwrap();
+                        }
+                        if matches.occurrences_of("stdin") != 0 {
+                            self.stdin = true;
+                        }
+                        if matches.occurrences_of("use-germ-format") != 0 {
+                            self.use_germ_format = true;
+                        }
+                        if let Some(input) = matches.value_of("input") {
+                            if matches.is_present("outputs") {
+                                sequence.add(Command {
+                                    comment: matches.value_of("comment").map(String::from),
+                                    prompt: self.prompt.clone(),
+                                    input: input.to_owned(),
+                                    outputs: matches
+                                        .values_of("outputs")
+                                        .unwrap()
+                                        .map(String::from)
+                                        .collect(),
+                                });
+                            } else {
+                                let output = process::Command::new(Env::shell())
+                                    .args(&["-c", &input])
+                                    .output()?;
+                                sequence.add(Command {
+                                    comment: matches.value_of("comment").map(String::from),
+                                    prompt: self.prompt.clone(),
+                                    input: input.to_owned(),
+                                    outputs: vec![std::str::from_utf8(&output.stdout)?.to_owned()],
+                                });
+                                stdout.write_all(&output.stdout)?;
+                            }
+                        }
+                    }
                 }
+                Err(err) => eprintln!("{}", err),
             }
             stdout.write_all(self.interactive_prompt.as_bytes())?;
             stdout.flush()?;
