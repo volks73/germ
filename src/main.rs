@@ -656,7 +656,6 @@ impl Cli {
         stdout.write_all(self.interactive_prompt.as_bytes())?;
         stdout.flush()?;
         for line in io::stdin().lock().lines() {
-            // TODO: Capture error and print instead of failing.
             let words = shellwords::split(&line.expect("stdin line"))?;
             let mut app = Interactive::clap();
             match app.get_matches_from_safe_borrow(words) {
@@ -713,6 +712,10 @@ impl Cli {
                         if matches.occurrences_of("height") != 0 {
                             self.height = value_t!(matches, "height", usize).unwrap();
                         }
+                        if matches.occurrences_of("input-format") != 0 {
+                            self.input_format =
+                                value_t!(matches, "input-format", InputFormats).unwrap();
+                        }
                         if matches.occurrences_of("output-format") != 0 {
                             self.output_format =
                                 value_t!(matches, "output-format", OutputFormats).unwrap();
@@ -737,6 +740,14 @@ impl Cli {
                         }
                         if matches.occurrences_of("use-germ-format") != 0 {
                             self.use_germ_format = true;
+                        }
+                        if let Some(input_file) = matches.value_of("input-file").map(PathBuf::from)
+                        {
+                            let Sequence { commands, .. } =
+                                self.read_from(BufReader::new(File::open(input_file)?))?;
+                            for command in commands {
+                                sequence.add(command);
+                            }
                         }
                         if let Some(input) = matches.value_of("input") {
                             if matches.is_present("outputs") {
