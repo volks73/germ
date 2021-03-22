@@ -207,8 +207,15 @@ impl Hold {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, StructOpt)]
 pub struct Asciicast {
+    #[structopt(flatten)]
     pub header: Header,
+
+    #[structopt(skip)]
     pub event_stream: Vec<Event>,
+
+    /// Mimic keypress logging functionality of the asciinema record functionality.
+    #[structopt(long)]
+    pub stdin: bool,
 }

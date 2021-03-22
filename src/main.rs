@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Env, Event, EventKind, Header, Hold};
+use germ::asciicast::{Asciicast, Env, Event, EventKind, Hold};
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use germ::{ApplySpeed, SecondsConversions};
 use std::fs::File;
@@ -95,12 +95,8 @@ struct Cli {
     #[structopt(short ="P", long, default_value = DEFAULT_INTERACTIVE_PROMPT, env = "GERM_INTERACTIVE_PROMPT")]
     interactive_prompt: String,
 
-    /// Mimic keypress logging functionality of the asciinema record functionality.
-    #[structopt(long)]
-    stdin: bool,
-
     #[structopt(flatten)]
-    header: Header,
+    asciicast: Asciicast,
 
     /// Use the Germ JSON format for the output.
     ///
@@ -346,7 +342,7 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
-                self.header.write_to(&mut writer)?;
+                self.asciicast.header.write_to(&mut writer)?;
                 let start_delay = sequence
                     .iter()
                     .try_fold(self.timings.begin, |start_delay, command| {
@@ -385,7 +381,7 @@ impl Cli {
                 + ((self.timings.type_start + self.timings.type_char * i) as f64)
                     .speed(self.timings.speed)
                     .into_seconds();
-            if self.stdin {
+            if self.asciicast.stdin {
                 Event(char_delay, EventKind::Keypress, c.clone()).write_to(&mut writer)?;
             }
             Event(char_delay, EventKind::Printed, c).write_to(&mut writer)?;
@@ -435,13 +431,13 @@ impl Cli {
             self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
         }
         if matches.occurrences_of("title") != 0 {
-            self.header.title = value_t!(matches, "title", String).ok();
+            self.asciicast.header.title = value_t!(matches, "title", String).ok();
         }
         if matches.occurrences_of("width") != 0 {
-            self.header.width = value_t!(matches, "width", usize).unwrap();
+            self.asciicast.header.width = value_t!(matches, "width", usize).unwrap();
         }
         if matches.occurrences_of("height") != 0 {
-            self.header.height = value_t!(matches, "height", usize).unwrap();
+            self.asciicast.header.height = value_t!(matches, "height", usize).unwrap();
         }
         if matches.occurrences_of("input-format") != 0 {
             self.input_format = value_t!(matches, "input-format", InputFormats).unwrap();
@@ -459,13 +455,13 @@ impl Cli {
             self.timings.speed = value_t!(matches, "speed", f64).unwrap();
         }
         if matches.occurrences_of("shell") != 0 {
-            self.header.env.shell = value_t!(matches, "shell", String).unwrap();
+            self.asciicast.header.env.shell = value_t!(matches, "shell", String).unwrap();
         }
         if matches.occurrences_of("term") != 0 {
-            self.header.env.term = value_t!(matches, "shell", String).unwrap();
+            self.asciicast.header.env.term = value_t!(matches, "shell", String).unwrap();
         }
         if matches.occurrences_of("stdin") != 0 {
-            self.stdin = true;
+            self.asciicast.stdin = true;
         }
         if matches.occurrences_of("use-germ-format") != 0 {
             self.use_germ_format = true;
