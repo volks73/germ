@@ -187,35 +187,49 @@ impl Event {
     }
 }
 
-#[derive(Debug)]
-pub struct Hold {
-    pub duration: f64,
-    pub start_delay: f64,
-}
-
-impl Hold {
-    pub fn write_to<W>(&self, mut writer: W) -> Result<()>
-    where
-        W: Write,
-    {
-        Event(
-            self.start_delay + self.duration,
-            EventKind::Printed,
-            String::new(),
-        )
-        .write_to(&mut writer)
-    }
-}
-
 #[derive(Debug, StructOpt)]
 pub struct Asciicast {
     #[structopt(flatten)]
     pub header: Header,
 
     #[structopt(skip)]
-    pub event_stream: Vec<Event>,
+    events: Vec<Event>,
 
     /// Mimic keypress logging functionality of the asciinema record functionality.
     #[structopt(long)]
     pub stdin: bool,
+}
+
+impl Asciicast {
+    pub fn add(&mut self, event: Event) -> &mut Self {
+        self.events.push(event);
+        self
+    }
+
+    pub fn append(&mut self, events: &mut Vec<Event>) -> &mut Self {
+        self.events.append(events);
+        self
+    }
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
+    }
+
+    pub fn write_to<W: Write>(&mut self, mut writer: W) -> Result<()> {
+        self.header.write_to(&mut writer)?;
+        for event in self.events.iter_mut() {
+            event.write_to(&mut writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl Default for Asciicast {
+    fn default() -> Self {
+        Self {
+            header: Header::default(),
+            events: Vec::new(),
+            stdin: false,
+        }
+    }
 }

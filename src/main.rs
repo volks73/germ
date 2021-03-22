@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Asciicast, Env, Event, EventKind, Hold};
+use germ::asciicast::{Asciicast, Env, Event, EventKind};
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use germ::{ApplySpeed, SecondsConversions};
 use std::fs::File;
@@ -323,7 +323,7 @@ impl Cli {
         Ok(())
     }
 
-    fn write(&self, sequence: Sequence) -> Result<()> {
+    fn write(&mut self, sequence: Sequence) -> Result<()> {
         let writer: Box<dyn Write> = if let Some(output_file) = &self.output_file {
             Box::new(File::create(output_file)?)
         } else {
@@ -332,7 +332,7 @@ impl Cli {
         self.write_to(writer, &sequence)
     }
 
-    fn write_to<W: Write>(&self, mut writer: W, sequence: &Sequence) -> Result<()> {
+    fn write_to<W: Write>(&mut self, mut writer: W, sequence: &Sequence) -> Result<()> {
         match self.output_format {
             OutputFormats::Germ => {
                 serde_json::to_writer(&mut writer, &sequence)?;
@@ -342,35 +342,36 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
-                self.asciicast.header.write_to(&mut writer)?;
                 let start_delay = sequence
                     .iter()
-                    .try_fold(self.timings.begin, |start_delay, command| {
-                        self.write_command(command, start_delay, &mut writer)
+                    .try_fold(sequence.timings().begin, |start_delay, command| {
+                        self.add_command(command, start_delay)
                     })?;
                 if self.timings.end.into_milliseconds() as usize != 0 {
-                    Hold {
-                        duration: self.timings.end,
-                        start_delay,
-                    }
-                    .write_to(&mut writer)?;
+                    self.asciicast.add(Event(
+                        start_delay + sequence.timings().end,
+                        EventKind::Printed,
+                        String::new(),
+                    ));
                 }
+                self.asciicast.write_to(&mut writer)?;
             }
         }
         Ok(())
     }
 
-    fn write_command<W>(&self, command: &Command, start_delay: f64, mut writer: W) -> Result<f64>
-    where
-        W: Write,
-    {
+    fn add_command(&mut self, command: &Command, start_delay: f64) -> Result<f64> {
         if let Some(c) = command.comment() {
             let mut comment = c.to_owned();
             comment.push_str("\r\n");
-            Event(start_delay, EventKind::Printed, comment).write_to(&mut writer)?;
+            self.asciicast
+                .add(Event(start_delay, EventKind::Printed, comment));
         }
-        Event(start_delay, EventKind::Printed, command.prompt().to_owned())
-            .write_to(&mut writer)?;
+        self.asciicast.add(Event(
+            start_delay,
+            EventKind::Printed,
+            command.prompt().to_owned(),
+        ));
         let input_time = ((self.timings.type_start
             + self.timings.type_char * command.input().len()
             + self.timings.type_submit) as f64)
@@ -382,9 +383,10 @@ impl Cli {
                     .speed(self.timings.speed)
                     .into_seconds();
             if self.asciicast.stdin {
-                Event(char_delay, EventKind::Keypress, c.clone()).write_to(&mut writer)?;
+                self.asciicast
+                    .add(Event(char_delay, EventKind::Keypress, c.clone()));
             }
-            Event(char_delay, EventKind::Printed, c).write_to(&mut writer)?;
+            self.asciicast.add(Event(char_delay, EventKind::Printed, c));
         }
         for (i, output) in command.outputs().iter().enumerate() {
             let show_delay = start_delay
@@ -393,13 +395,14 @@ impl Cli {
                     .speed(self.timings.speed)
                     .into_seconds();
             if i == 0 {
-                Event(show_delay, EventKind::Printed, String::from("\r\n"))
-                    .write_to(&mut writer)?;
+                self.asciicast
+                    .add(Event(show_delay, EventKind::Printed, String::from("\r\n")));
             }
             for line in output.lines() {
                 let mut output_data = String::from(line);
                 output_data.push_str("\r\n");
-                Event(show_delay, EventKind::Printed, output_data).write_to(&mut writer)?;
+                self.asciicast
+                    .add(Event(show_delay, EventKind::Printed, output_data));
             }
         }
         let outputs_time = ((self.timings.output_line * command.outputs().len()) as f64)
