@@ -15,418 +15,19 @@
 
 use anyhow::Result;
 use atty::Stream;
-use serde::{Deserialize, Serialize};
-use std::env;
-use std::fmt;
+use germ::asciicast::{Env, Event, EventKind, Header, Hold, DEFAULT_SHELL, DEFAULT_TERM};
+use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
+use germ::{ApplySpeed, SecondsConversions};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
 use std::process;
-use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::clap::{self, value_t, ArgMatches};
 use structopt::StructOpt;
 use strum::{EnumString, EnumVariantNames, VariantNames};
 
-const ASCIICAST_VERSION: usize = 2;
-const SEQUENCE_VERSION: usize = 1;
-const SHELL_VAR_NAME: &str = "SHELL";
-const TERM_VAR_NAME: &str = "TERM";
-const DEFAULT_BEGIN_DELAY: &str = "0.0";
-const DEFAULT_END_DELAY: &str = "1.0";
-const DEFAULT_DELAY_TYPE_START: &str = "750";
-const DEFAULT_DELAY_TYPE_CHAR: &str = "35";
-const DEFAULT_DELAY_TYPE_SUBMIT: &str = "350";
-const DEFAULT_DELAY_OUTPUT_LINE: &str = "500";
-const DEFAULT_INTERACTIVE_PROMPT: &str = ">>> ";
-const DEFAULT_PROMPT: &str = "$ ";
-const DEFAULT_HEIGHT: usize = 55;
-const DEFAULT_SHELL: &str = "/bin/bash";
-const DEFAULT_TERM: &str = "xterm-256color";
-const DEFAULT_WIDTH: usize = 188;
-const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
-const MILLISECONDS_UNITS: &str = "ms";
-const SECONDS_UNITS: &str = "secs";
-
-mod termsheets {
-    use super::*;
-
-    #[derive(Debug, Deserialize, Serialize)]
-    pub struct Command {
-        input: String,
-        output: Vec<String>,
-    }
-
-    impl From<super::Command> for Command {
-        fn from(c: super::Command) -> Self {
-            Self {
-                input: c.input,
-                output: c.outputs,
-            }
-        }
-    }
-
-    impl<'a> From<&'a super::Command> for Command {
-        fn from(c: &'a super::Command) -> Self {
-            Self {
-                input: c.input.clone(),
-                output: c.outputs.clone(),
-            }
-        }
-    }
-
-    impl From<Command> for super::Command {
-        fn from(c: Command) -> Self {
-            Self {
-                comment: None,
-                prompt: String::from(DEFAULT_PROMPT),
-                input: c.input,
-                outputs: c.output,
-            }
-        }
-    }
-
-    impl From<Sequence> for Vec<Command> {
-        fn from(s: Sequence) -> Self {
-            s.into_iter().map(Command::from).collect()
-        }
-    }
-
-    impl<'a> From<&'a Sequence> for Vec<Command> {
-        fn from(s: &'a Sequence) -> Self {
-            s.iter().map(Command::from).collect()
-        }
-    }
-
-    impl From<Vec<Command>> for Sequence {
-        fn from(t: Vec<Command>) -> Self {
-            Self {
-                commands: t.into_iter().map(super::Command::from).collect(),
-                ..Default::default()
-            }
-        }
-    }
-}
-
-trait ApplySpeed {
-    type Output;
-
-    fn speed(self, speed: f64) -> Self::Output;
-}
-
-impl ApplySpeed for f64 {
-    type Output = Self;
-
-    fn speed(self, speed: f64) -> Self::Output {
-        self / speed
-    }
-}
-
-trait SecondsConversions {
-    type Output;
-
-    fn into_seconds(self) -> Self::Output;
-
-    fn into_milliseconds(self) -> Self::Output;
-}
-
-impl SecondsConversions for f64 {
-    type Output = Self;
-
-    fn into_seconds(self) -> Self::Output {
-        self / MILLISECONDS_IN_A_SECOND
-    }
-
-    fn into_milliseconds(self) -> Self::Output {
-        self * MILLISECONDS_IN_A_SECOND
-    }
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, StructOpt)]
-struct Timings {
-    /// The delay before starting the animation.
-    ///
-    /// The units are in seconds (s).
-    #[structopt(
-        short = "B",
-        long = "begin-delay",
-        default_value = DEFAULT_BEGIN_DELAY,
-        value_name = SECONDS_UNITS,
-        env = "GERM_BEGIN_DELAY"
-    )]
-    begin: f64, // seconds
-
-    /// The delay at the end of the animation.
-    ///
-    /// This is useful when looping/repeat is enabled and some time between
-    /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
-    /// desired. The units are in seconds (s).
-    #[structopt(
-        short = "E",
-        long = "end-delay",
-        default_value = DEFAULT_END_DELAY,
-        value_name = SECONDS_UNITS,
-        env = "GERM_END_DELAY"
-    )]
-    end: f64, // seconds
-
-    /// The delay before starting the simulated typing for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long = "delay-type-start",
-        default_value = DEFAULT_DELAY_TYPE_START,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_START"
-    )]
-    type_start: usize, // milliseconds
-
-    /// The delay between simulating typing of characters for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long = "delay-type-char",
-        default_value = DEFAULT_DELAY_TYPE_CHAR,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_CHAR"
-    )]
-    type_char: usize, // milliseconds
-
-    /// The delay between the simulated typing and output printing.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long = "delay-type-submit",
-        default_value = DEFAULT_DELAY_TYPE_SUBMIT,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_TYPE_SUBMIT"
-    )]
-    type_submit: usize, // milliseconds
-
-    /// The delay between outputs for the command.
-    ///
-    /// The units are in milliseconds (ms).
-    #[structopt(
-        long = "delay-output-line",
-        default_value = DEFAULT_DELAY_OUTPUT_LINE,
-        value_name = MILLISECONDS_UNITS,
-        env = "GERM_DELAY_OUTPUT_LINE",
-        hide_env_values = true
-    )]
-    output_line: usize, // milliseconds
-}
-
-impl Default for Timings {
-    fn default() -> Self {
-        Self {
-            begin: DEFAULT_BEGIN_DELAY.parse().expect("Default float"),
-            end: DEFAULT_END_DELAY.parse().expect("Default float"),
-            type_start: DEFAULT_DELAY_TYPE_START.parse().expect("Default usize"),
-            type_char: DEFAULT_DELAY_TYPE_CHAR.parse().expect("Default usize"),
-            type_submit: DEFAULT_DELAY_TYPE_SUBMIT.parse().expect("Default usize"),
-            output_line: DEFAULT_DELAY_OUTPUT_LINE.parse().expect("Default usize"),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Sequence {
-    version: usize,
-    timings: Timings,
-    commands: Vec<Command>,
-}
-
-impl Sequence {
-    fn iter(&self) -> impl Iterator<Item = &Command> {
-        self.commands.iter()
-    }
-
-    fn into_iter(self) -> impl Iterator<Item = Command> {
-        self.commands.into_iter()
-    }
-
-    fn add(&mut self, command: Command) -> &mut Self {
-        self.commands.push(command);
-        self
-    }
-
-    fn append_from(&mut self, s: Sequence) -> &mut Self {
-        let Sequence { commands, .. } = s;
-        for command in commands {
-            self.add(command);
-        }
-        self
-    }
-}
-
-impl Default for Sequence {
-    fn default() -> Self {
-        Self {
-            version: SEQUENCE_VERSION,
-            timings: Timings::default(),
-            commands: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Command {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    comment: Option<String>,
-    prompt: String,
-    input: String,
-    outputs: Vec<String>,
-}
-
-#[derive(Debug, Serialize)]
-struct Env {
-    #[serde(rename = "SHELL")]
-    shell: String,
-
-    #[serde(rename = "TERM")]
-    term: String,
-}
-
-impl Env {
-    pub fn shell() -> String {
-        env::var_os(SHELL_VAR_NAME)
-            .map(|s| String::from(s.to_string_lossy()))
-            .unwrap_or_else(|| String::from(DEFAULT_SHELL))
-    }
-
-    pub fn term() -> String {
-        env::var_os(TERM_VAR_NAME)
-            .map(|s| String::from(s.to_string_lossy()))
-            .unwrap_or_else(|| String::from(DEFAULT_TERM))
-    }
-}
-
-impl Default for Env {
-    fn default() -> Self {
-        Self {
-            shell: Self::shell(),
-            term: Self::term(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-struct Theme {
-    #[serde(rename = "fg")]
-    foreground: String,
-
-    #[serde(rename = "bg")]
-    background: String,
-
-    palette: String,
-}
-
-#[derive(Debug, Serialize)]
-struct Header {
-    version: usize,
-    width: usize,
-    height: usize,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timestamp: Option<u64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    duration: Option<f64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    idle_time_limit: Option<f64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    command: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    env: Option<Env>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    theme: Option<Theme>,
-}
-
-impl Header {
-    pub fn write_to<W>(&self, mut writer: W) -> Result<()>
-    where
-        W: Write,
-    {
-        serde_json::to_writer(&mut writer, self)?;
-        writeln!(&mut writer)?;
-        Ok(())
-    }
-}
-
-impl Default for Header {
-    fn default() -> Self {
-        Self {
-            version: ASCIICAST_VERSION,
-            width: DEFAULT_WIDTH,
-            height: DEFAULT_HEIGHT,
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .ok()
-                .map(|d| d.as_secs()),
-            duration: None,
-            idle_time_limit: None,
-            command: None,
-            title: None,
-            env: Some(Env::default()),
-            theme: None,
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-enum EventKind {
-    #[serde(rename = "o")]
-    Printed,
-
-    #[serde(rename = "i")]
-    Keypress,
-}
-
-impl fmt::Display for EventKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Printed => write!(f, "o"),
-            Self::Keypress => write!(f, "i"),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-struct Event<'a>(f64, EventKind, &'a str);
-
-impl<'a> Event<'a> {
-    pub fn write_to<W>(&mut self, mut writer: W) -> Result<()>
-    where
-        W: Write,
-    {
-        self.0 = (self.0 * MILLISECONDS_IN_A_SECOND).trunc() / MILLISECONDS_IN_A_SECOND;
-        serde_json::to_writer(&mut writer, self)?;
-        writeln!(&mut writer)?;
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-struct Hold {
-    duration: f64,
-    start_delay: f64,
-}
-
-impl Hold {
-    pub fn write_to<W>(&self, mut writer: W) -> Result<()>
-    where
-        W: Write,
-    {
-        Event(self.start_delay + self.duration, EventKind::Printed, "").write_to(&mut writer)
-    }
-}
+pub const DEFAULT_INTERACTIVE_PROMPT: &str = ">>> ";
 
 #[derive(Debug, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "lowercase")]
@@ -497,10 +98,6 @@ struct Cli {
     /// Mimic keypress logging functionality of the asciinema record functionality.
     #[structopt(long)]
     stdin: bool,
-
-    /// Speed up or slow down the animation by this factor.
-    #[structopt(short = "s", long, default_value = "1.0", value_name = "float")]
-    speed: f64,
 
     /// The SHELL environment variable for the recording.
     #[structopt(short = "S", long, env = "SHELL", default_value = DEFAULT_SHELL)]
@@ -619,10 +216,7 @@ impl Cli {
         if let Some(input_file) = &self.input_file {
             self.read_from(BufReader::new(File::open(input_file)?))
         } else if atty::is(Stream::Stdin) {
-            Ok(Sequence {
-                timings: self.timings,
-                ..Default::default()
-            })
+            Ok(Sequence::from(self.timings))
         } else {
             let stdin = io::stdin();
             self.read_from(stdin)
@@ -633,19 +227,18 @@ impl Cli {
         match self.input_format {
             InputFormats::Germ => serde_json::from_reader(r).map_err(anyhow::Error::from),
             InputFormats::TermSheets => {
-                let termsheets: Vec<termsheets::Command> = serde_json::from_reader(r)?;
-                Ok(Sequence {
-                    timings: self.timings,
-                    commands: termsheets
+                let termsheets: Vec<germ::termsheets::Command> = serde_json::from_reader(r)?;
+                let mut sequence = Sequence::from(self.timings);
+                sequence.append(
+                    &mut termsheets
                         .into_iter()
                         .map(|c| Command {
-                            comment: None,
                             prompt: self.prompt.clone(),
                             ..Command::from(c)
                         })
                         .collect(),
-                    ..Default::default()
-                })
+                );
+                Ok(sequence)
             }
         }
     }
@@ -770,7 +363,7 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &sequence)?;
             }
             OutputFormats::TermSheets => {
-                let termsheets: Vec<termsheets::Command> = sequence.into();
+                let termsheets: Vec<germ::termsheets::Command> = sequence.into();
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
@@ -814,12 +407,12 @@ impl Cli {
         let input_time = ((self.timings.type_start
             + self.timings.type_char * command.input.len()
             + self.timings.type_submit) as f64)
-            .speed(self.speed)
+            .speed(self.timings.speed)
             .into_seconds();
         for (i, c) in command.input.chars().map(|c| c.to_string()).enumerate() {
             let char_delay = start_delay
                 + ((self.timings.type_start + self.timings.type_char * i) as f64)
-                    .speed(self.speed)
+                    .speed(self.timings.speed)
                     .into_seconds();
             if self.stdin {
                 Event(char_delay, EventKind::Keypress, &c).write_to(&mut writer)?;
@@ -830,7 +423,7 @@ impl Cli {
             let show_delay = start_delay
                 + input_time
                 + ((self.timings.output_line * (i + 1)) as f64)
-                    .speed(self.speed)
+                    .speed(self.timings.speed)
                     .into_seconds();
             if i == 0 {
                 Event(show_delay, EventKind::Printed, "\r\n").write_to(&mut writer)?;
@@ -842,7 +435,7 @@ impl Cli {
             }
         }
         let outputs_time = ((self.timings.output_line * command.outputs.len()) as f64)
-            .speed(self.speed)
+            .speed(self.timings.speed)
             .into_seconds();
         Ok(start_delay + input_time + outputs_time)
     }
@@ -891,7 +484,7 @@ impl Cli {
             self.prompt = value_t!(matches, "prompt", String).unwrap();
         }
         if matches.occurrences_of("speed") != 0 {
-            self.speed = value_t!(matches, "speed", f64).unwrap();
+            self.timings.speed = value_t!(matches, "speed", f64).unwrap();
         }
         if matches.occurrences_of("shell") != 0 {
             self.shell = value_t!(matches, "shell", String).unwrap();
