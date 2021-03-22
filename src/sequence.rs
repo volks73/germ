@@ -132,10 +132,6 @@ impl Sequence {
         self.commands.iter()
     }
 
-    pub fn into_iter(self) -> impl Iterator<Item = Command> {
-        self.commands.into_iter()
-    }
-
     pub fn add(&mut self, command: Command) -> &mut Self {
         self.commands.push(command);
         self
@@ -192,6 +188,15 @@ impl Default for Sequence {
             timings: Timings::default(),
             commands: Vec::new(),
         }
+    }
+}
+
+impl IntoIterator for Sequence {
+    type Item = Command;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.commands.into_iter()
     }
 }
 
