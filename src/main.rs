@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Env, Event, EventKind, Header, Hold, DEFAULT_SHELL, DEFAULT_TERM};
+use germ::asciicast::{Env, Event, EventKind, Header, Hold};
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use germ::{ApplySpeed, SecondsConversions};
 use std::fs::File;
@@ -99,30 +99,8 @@ struct Cli {
     #[structopt(long)]
     stdin: bool,
 
-    /// The SHELL environment variable for the recording.
-    #[structopt(short = "S", long, env = "SHELL", default_value = DEFAULT_SHELL)]
-    shell: String,
-
-    /// The TERM environment variable for the recording.
-    #[structopt(short = "T", long, env = "TERM", default_value = DEFAULT_TERM)]
-    term: String,
-
-    /// The number of columns for the terminal.
-    #[structopt(short = "W", long, default_value = "188", value_name = "cols")]
-    width: usize,
-
-    /// The number of rows for the terminal.
-    #[structopt(
-        short = "H",
-        long = "height",
-        default_value = "55",
-        value_name = "rows"
-    )]
-    height: usize,
-
-    /// The title for the asciicast file.
-    #[structopt(short, long)]
-    title: Option<String>,
+    #[structopt(flatten)]
+    header: Header,
 
     /// Use the Germ JSON format for the output.
     ///
@@ -256,7 +234,7 @@ impl Cli {
 
     fn append_arguments(&self, sequence: &mut Sequence, input: &str) -> Result<()> {
         let mut outputs = if self.outputs.is_empty() {
-            let output = process::Command::new(Env::shell())
+            let output = process::Command::new(Env::default().shell())
                 .args(&["-c", input])
                 .output()?;
             vec![std::str::from_utf8(&output.stdout)?.to_owned()]
@@ -321,7 +299,7 @@ impl Cli {
                                     .map(String::from)
                                     .collect()
                             } else {
-                                let output = process::Command::new(Env::shell())
+                                let output = process::Command::new(Env::default().shell())
                                     .args(&["-c", &input])
                                     .output()?;
                                 stdout.write_all(&output.stdout)?;
@@ -368,17 +346,7 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
-                Header {
-                    width: self.width,
-                    height: self.height,
-                    title: self.title.clone(),
-                    env: Some(Env {
-                        shell: self.shell.clone(),
-                        term: self.term.clone(),
-                    }),
-                    ..Default::default()
-                }
-                .write_to(&mut writer)?;
+                self.header.write_to(&mut writer)?;
                 let start_delay = sequence
                     .iter()
                     .try_fold(self.timings.begin, |start_delay, command| {
@@ -467,13 +435,13 @@ impl Cli {
             self.timings.end = value_t!(matches, "end-delay", f64).unwrap();
         }
         if matches.occurrences_of("title") != 0 {
-            self.title = value_t!(matches, "title", String).ok();
+            self.header.title = value_t!(matches, "title", String).ok();
         }
         if matches.occurrences_of("width") != 0 {
-            self.width = value_t!(matches, "width", usize).unwrap();
+            self.header.width = value_t!(matches, "width", usize).unwrap();
         }
         if matches.occurrences_of("height") != 0 {
-            self.height = value_t!(matches, "height", usize).unwrap();
+            self.header.height = value_t!(matches, "height", usize).unwrap();
         }
         if matches.occurrences_of("input-format") != 0 {
             self.input_format = value_t!(matches, "input-format", InputFormats).unwrap();
@@ -491,10 +459,10 @@ impl Cli {
             self.timings.speed = value_t!(matches, "speed", f64).unwrap();
         }
         if matches.occurrences_of("shell") != 0 {
-            self.shell = value_t!(matches, "shell", String).unwrap();
+            self.header.env.shell = value_t!(matches, "shell", String).unwrap();
         }
         if matches.occurrences_of("term") != 0 {
-            self.shell = value_t!(matches, "shell", String).unwrap();
+            self.header.env.term = value_t!(matches, "shell", String).unwrap();
         }
         if matches.occurrences_of("stdin") != 0 {
             self.stdin = true;

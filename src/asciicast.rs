@@ -21,6 +21,7 @@ use std::env;
 use std::fmt;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
+use structopt::StructOpt;
 
 pub const VERSION: usize = 2;
 pub const DEFAULT_HEIGHT: usize = 55;
@@ -28,34 +29,38 @@ pub const DEFAULT_SHELL: &str = "/bin/bash";
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: usize = 188;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, StructOpt)]
 pub struct Env {
+    /// The SHELL environment variable for the recording.
+    #[structopt(short = "S", long, env = "SHELL", default_value = DEFAULT_SHELL)]
     #[serde(rename = "SHELL")]
     pub shell: String,
 
+    /// The TERM environment variable for the recording.
+    #[structopt(short = "T", long, env = "TERM", default_value = DEFAULT_TERM)]
     #[serde(rename = "TERM")]
     pub term: String,
 }
 
 impl Env {
-    pub fn shell() -> String {
-        env::var_os(SHELL_VAR_NAME)
-            .map(|s| String::from(s.to_string_lossy()))
-            .unwrap_or_else(|| String::from(DEFAULT_SHELL))
+    pub fn shell(&self) -> &str {
+        &self.shell
     }
 
-    pub fn term() -> String {
-        env::var_os(TERM_VAR_NAME)
-            .map(|s| String::from(s.to_string_lossy()))
-            .unwrap_or_else(|| String::from(DEFAULT_TERM))
+    pub fn term(&self) -> &str {
+        &self.term
     }
 }
 
 impl Default for Env {
     fn default() -> Self {
         Self {
-            shell: Self::shell(),
-            term: Self::term(),
+            shell: env::var_os(SHELL_VAR_NAME)
+                .map(|s| String::from(s.to_string_lossy()))
+                .unwrap_or_else(|| String::from(DEFAULT_SHELL)),
+            term: env::var_os(TERM_VAR_NAME)
+                .map(|s| String::from(s.to_string_lossy()))
+                .unwrap_or_else(|| String::from(DEFAULT_TERM)),
         }
     }
 }
@@ -71,31 +76,50 @@ pub struct Theme {
     pub palette: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, StructOpt)]
 pub struct Header {
+    #[structopt(skip)]
     pub version: usize,
+
+    /// The number of columns for the terminal.
+    #[structopt(short = "W", long, default_value = "188", value_name = "cols")]
     pub width: usize,
+
+    /// The number of rows for the terminal.
+    #[structopt(
+        short = "H",
+        long = "height",
+        default_value = "55",
+        value_name = "rows"
+    )]
     pub height: usize,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(skip)]
     pub timestamp: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(skip)]
     pub duration: Option<f64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(skip)]
     pub idle_time_limit: Option<f64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(skip)]
     pub command: Option<String>,
 
+    /// The title for the asciicast file.
+    #[structopt(short, long)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub env: Option<Env>,
+    #[structopt(flatten)]
+    pub env: Env,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(skip)]
     pub theme: Option<Theme>,
 }
 
@@ -124,7 +148,7 @@ impl Default for Header {
             idle_time_limit: None,
             command: None,
             title: None,
-            env: Some(Env::default()),
+            env: Env::default(),
             theme: None,
         }
     }
@@ -183,6 +207,7 @@ impl Hold {
     }
 }
 
+#[derive(Debug)]
 pub struct Asciicast {
     pub header: Header,
     pub event_stream: Vec<Event>,
