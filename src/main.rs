@@ -249,6 +249,14 @@ impl Sequence {
         self.commands.push(command);
         self
     }
+
+    fn append_from(&mut self, s: Sequence) -> &mut Self {
+        let Sequence { commands, .. } = s;
+        for command in commands {
+            self.add(command);
+        }
+        self
+    }
 }
 
 impl Default for Sequence {
@@ -706,11 +714,9 @@ impl Cli {
                         self.update_from(&matches);
                         if let Some(input_file) = matches.value_of("input-file").map(PathBuf::from)
                         {
-                            let Sequence { commands, .. } =
-                                self.read_from(BufReader::new(File::open(input_file)?))?;
-                            for command in commands {
-                                sequence.add(command);
-                            }
+                            sequence.append_from(
+                                self.read_from(BufReader::new(File::open(input_file)?))?,
+                            );
                         }
                         if let Some(input) = matches.value_of("input") {
                             if matches.is_present("outputs") {
