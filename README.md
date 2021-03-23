@@ -21,12 +21,9 @@ This is all possible because of the excellent documentation, support, and openne
 
 Start a terminal and then execute the following commands:
 
-``` sh
-~$ germ "echo 'Hello World'" "Hello World" > tmp.cast
-~$ asciinema play tmp.cast
-$ echo 'Hello World'
-Hello World
-```
+<a href="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA">
+    <img src="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA.svg?autoplay=1&loop=1">
+</a>
 
 [asciinema]: https://asciinema.org/
 
