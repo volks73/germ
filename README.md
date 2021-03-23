@@ -21,8 +21,8 @@ This is all possible because of the excellent documentation, support, and openne
 
 Start a terminal and then execute the following commands:
 
-<a href="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA">
-    <img src="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA.svg?autoplay=1&loop=1">
+<a href="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA?autoplay=1&loop=1">
+    <img src="https://asciinema.org/a/M4Ez8ZPdHSK87nQFsLeAcdltA.svg" width="700" height="440">
 </a>
 
 [asciinema]: https://asciinema.org/
