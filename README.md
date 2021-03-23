@@ -21,15 +21,7 @@ This is all possible because of the excellent documentation, support, and openne
 
 Start a terminal and then execute the following commands:
 
-<a href="https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w" target="_blank">
-``` sh
-~$ germ "echo Hello World" "Hello World" > tmp.cast
-~$ asciinema play tmp.cast
-$ echo Hello World
-Hello World
-~$ 
-```
-</a>
+[![asciicast](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w.svg)](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w?autoplay=1&loop=1)
 
 ## Installation
 
