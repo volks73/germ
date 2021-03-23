@@ -24,10 +24,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
 
 pub const VERSION: usize = 2;
-pub const DEFAULT_HEIGHT: usize = 55;
+pub const DEFAULT_HEIGHT: &str = "24";
 pub const DEFAULT_SHELL: &str = "/bin/bash";
 pub const DEFAULT_TERM: &str = "xterm-256color";
-pub const DEFAULT_WIDTH: usize = 188;
+pub const DEFAULT_WIDTH: &str = "80";
 pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 pub const MILLISECONDS_UNITS: &str = "ms";
 pub const SHELL_VAR_NAME: &str = "SHELL";
@@ -86,14 +86,14 @@ pub struct Header {
     version: usize,
 
     /// The number of columns for the terminal.
-    #[structopt(short = "W", long, default_value = "188", value_name = "cols")]
+    #[structopt(short = "W", long, default_value = DEFAULT_WIDTH, value_name = "cols")]
     pub width: usize,
 
     /// The number of rows for the terminal.
     #[structopt(
         short = "H",
         long = "height",
-        default_value = "55",
+        default_value = DEFAULT_HEIGHT,
         value_name = "rows"
     )]
     pub height: usize,
@@ -142,8 +142,8 @@ impl Default for Header {
     fn default() -> Self {
         Self {
             version: VERSION,
-            width: DEFAULT_WIDTH,
-            height: DEFAULT_HEIGHT,
+            width: DEFAULT_WIDTH.parse().expect("Default usize"),
+            height: DEFAULT_HEIGHT.parse().expect("Default usize"),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .ok()
