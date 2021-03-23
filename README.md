@@ -21,7 +21,7 @@ This is all possible because of the excellent documentation, support, and openne
 
 Start a terminal and then execute the following commands:
 
-[![asciicast](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w.svg)](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w?autoplay=1&loop=1&t=7)
+[![asciicast](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w.svg)](https://asciinema.org/a/JvgdZbR7YSpA44y1PgPL9PB0w?autoplay=1&loop=1)
 
 ## Installation
 
