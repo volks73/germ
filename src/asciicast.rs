@@ -82,8 +82,8 @@ pub struct Theme {
 
 #[derive(Debug, Serialize, StructOpt)]
 pub struct Header {
-    #[structopt(skip)]
-    pub version: usize,
+    #[structopt(skip = VERSION)]
+    version: usize,
 
     /// The number of columns for the terminal.
     #[structopt(short = "W", long, default_value = "188", value_name = "cols")]

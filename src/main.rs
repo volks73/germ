@@ -180,6 +180,7 @@ impl Cli {
             print_warranty();
             return Ok(());
         }
+        dbg!(&self.asciicast);
         let mut sequence = self.read()?;
         self.append(&mut sequence)?;
         self.write(sequence)
