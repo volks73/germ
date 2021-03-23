@@ -225,24 +225,23 @@ germ -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
 ```
 
 ``` sh
-~$ germ -o example.cast
+~$ germ
 Copyright (C) 2021  Christopher R. Field
 This program comes with ABSOLUTELY NO WARRANTY; for details use the `--warranty`
 flag. This is free software, and you are welcome to redistirbute it under
 certain conditions; use the `--license` flag for details.
 
-You have entered interactive mode. Type a commmand as you would at the prompt
-and press <ENTER>. The command will be executed in a separate shell and the
-output from the command will be displayed on the next line(s). Each
-command-output pair will automatically be added to the sequence.
+You have entered interactive mode. The prompt has similar arguments, options,
+flags, and functionality to the command line interface. Use the --help flag to
+print the help text.
 
 Type CTRL+D (^D) to exit and generate output or CTRL+C (^C) to abort.
 
->>> echo Hello World
+>>> "echo Hello World"
 World Hello
->>> echo Hello World Again
+>>> "echo Hello World Again"
 Hello World Again
-$ cat example.cast
+>>> --print
 {"version":2,"width":188,"height":55,"timestamp":1615946740,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
