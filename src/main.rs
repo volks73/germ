@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Asciicast, DEFAULT_SHELL_ARG};
+use germ::asciicast::Asciicast;
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use std::fs::File;
 use std::io;
@@ -407,7 +407,10 @@ impl Cli {
 
     fn execute_cmd(&self, input: &str) -> Result<process::Output> {
         process::Command::new(self.asciicast.header.env.shell())
-            .args(&[DEFAULT_SHELL_ARG, &input])
+            .args(&[
+                &format!("{}", self.asciicast.header.env.execute_string_flag),
+                input,
+            ])
             .output()
             .map_err(anyhow::Error::from)
     }

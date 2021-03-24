@@ -34,7 +34,7 @@ pub struct Timings {
     ///
     /// The units are in seconds (s).
     #[structopt(
-        short = "B",
+        short = "b",
         long = "begin-delay",
         default_value = DEFAULT_BEGIN_DELAY,
         value_name = SECONDS_UNITS,
@@ -48,7 +48,7 @@ pub struct Timings {
     /// iterations is needed and/or desired. Set the value to 0.0 if no hold is
     /// desired. The units are in seconds (s).
     #[structopt(
-        short = "E",
+        short = "e",
         long = "end-delay",
         default_value = DEFAULT_END_DELAY,
         value_name = SECONDS_UNITS,

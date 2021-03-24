@@ -22,26 +22,42 @@ use std::fmt;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 use structopt::StructOpt;
+use strum::{EnumString, EnumVariantNames, VariantNames};
 
 pub const VERSION: usize = 2;
 pub const DEFAULT_HEIGHT: &str = "24";
 
-#[cfg(target_family = "unix")]
 pub const DEFAULT_SHELL: &str = "/bin/sh";
-#[cfg(target_family = "windows")]
-pub const DEFAULT_SHELL: &str = "cmd";
-
-#[cfg(target_family = "unix")]
-pub const DEFAULT_SHELL_ARG: &str = "-c";
-#[cfg(target_family = "windows")]
-pub const DEFAULT_SHELL_ARG: &str = "/c";
-
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: &str = "80";
 pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 pub const MILLISECONDS_UNITS: &str = "ms";
 pub const SHELL_VAR_NAME: &str = "SHELL";
 pub const TERM_VAR_NAME: &str = "TERM";
+
+#[derive(Debug, EnumString, EnumVariantNames)]
+#[strum(serialize_all = "lowercase")]
+pub enum ExecuteStringFlags {
+    Unix,
+    Pwsh,
+    Cmd,
+}
+
+impl fmt::Display for ExecuteStringFlags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Unix => write!(f, "-c"),
+            Self::Pwsh => write!(f, "-Command"),
+            Self::Cmd => write!(f, "/c"),
+        }
+    }
+}
+
+impl Default for ExecuteStringFlags {
+    fn default() -> Self {
+        Self::Unix
+    }
+}
 
 #[derive(Debug, Serialize, StructOpt)]
 pub struct Env {
@@ -54,6 +70,19 @@ pub struct Env {
     #[structopt(short = "T", long, env = "TERM", default_value = DEFAULT_TERM)]
     #[serde(rename = "TERM")]
     pub term: String,
+
+    /// The flag passed to the shell to execute the string as a command.
+    #[structopt(
+        short = "E",
+        long,
+        possible_values = ExecuteStringFlags::VARIANTS,
+        case_insensitive = true,
+        value_name = "shell",
+        env = "GERM_EXECUTE_STRING_FLAG",
+        default_value = "unix"
+    )]
+    #[serde(skip)]
+    pub execute_string_flag: ExecuteStringFlags,
 }
 
 impl Env {
@@ -75,6 +104,7 @@ impl Default for Env {
             term: env::var_os(TERM_VAR_NAME)
                 .map(|s| String::from(s.to_string_lossy()))
                 .unwrap_or_else(|| String::from(DEFAULT_TERM)),
+            execute_string_flag: ExecuteStringFlags::default(),
         }
     }
 }
