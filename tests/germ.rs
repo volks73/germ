@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 
 #[test]
-fn input_with_one_output() {
+fn input_arg_with_one_outputs_arg() {
     let mut cmd = Command::cargo_bin("germ").unwrap();
     let assert = cmd.args(&["echo Hello World", "Hello World"]).assert();
     assert.success().stdout(r#"{"version":2,"width":80,"height":24,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
