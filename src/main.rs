@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::Asciicast;
+use germ::asciicast::{Asciicast, DEFAULT_SHELL_ARG};
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use std::fs::File;
 use std::io;
@@ -229,9 +229,7 @@ impl Cli {
 
     fn append_arguments(&self, sequence: &mut Sequence, input: &str) -> Result<()> {
         let mut outputs = if self.outputs.is_empty() {
-            let output = process::Command::new(self.asciicast.header.env.shell())
-                .args(&["-c", input])
-                .output()?;
+            let output = self.execute_cmd(input)?;
             vec![std::str::from_utf8(&output.stdout)?.to_owned()]
         } else {
             self.outputs.clone()
@@ -294,10 +292,7 @@ impl Cli {
                                     .map(String::from)
                                     .collect()
                             } else {
-                                let output =
-                                    process::Command::new(self.asciicast.header.env.shell())
-                                        .args(&["-c", &input])
-                                        .output()?;
+                                let output = self.execute_cmd(&input)?;
                                 stdout.write_all(&output.stdout)?;
                                 vec![std::str::from_utf8(&output.stdout)?.to_owned()]
                             };
@@ -408,6 +403,13 @@ impl Cli {
         if matches.occurrences_of("use-germ-format") != 0 {
             self.use_germ_format = true;
         }
+    }
+
+    fn execute_cmd(&self, input: &str) -> Result<process::Output> {
+        process::Command::new(self.asciicast.header.env.shell())
+            .args(&[DEFAULT_SHELL_ARG, &input])
+            .output()
+            .map_err(anyhow::Error::from)
     }
 }
 
