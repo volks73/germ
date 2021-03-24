@@ -24,11 +24,6 @@
 //! [Termynal], and [Typer] projects for inspiration, documentation, openness,
 //! and feedback.
 //!
-//! [asciinema]: https://asciinema.org
-//! [TermSheets]: https://neatsoftware.github.io/term-sheets/
-//! [Termyanl]: https://github.com/ines/termynal
-//! [Type]: https://typer.tiangolo.com/
-//!
 //! ## Table of Contents
 //!
 //! - [Quick Start](#quick-start)
@@ -174,6 +169,10 @@
 //! need to be `.cast`. Any file extension can be used, but `.cast` is the most
 //! common for asciicast files.
 //!
+//! [asciinema]: https://asciinema.org
+//! [TermSheets]: https://neatsoftware.github.io/term-sheets/
+//! [Termyanl]: https://github.com/ines/termynal
+//! [Typer]: https://typer.tiangolo.com/
 //! ["Hello, World!" program]: https://en.wikipedia.org/wiki/%22Hello,_World!%22_program
 //! [`echo`]: https://en.wikipedia.org/wiki/Echo_(command)
 //! [asciicast v2]: https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
