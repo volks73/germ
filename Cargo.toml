@@ -26,6 +26,9 @@ shellwords = "1.1.0"
 structopt = "0.3"
 strum = { version = "0.20", features = ["derive"] }
 
+[dev-dependencies]
+assert_cmd = "1" 
+
 [badges]
 is-it-maintained-issue-resolution = { repository = "volks73/germ" }
 is-it-maintained-open-issues = { repository = "volks73/germ" }
