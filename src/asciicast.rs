@@ -25,7 +25,17 @@ use structopt::StructOpt;
 
 pub const VERSION: usize = 2;
 pub const DEFAULT_HEIGHT: &str = "24";
+
+#[cfg(target_family = "unix")]
 pub const DEFAULT_SHELL: &str = "/bin/sh";
+#[cfg(target_family = "windows")]
+pub const DEFAULT_SHELL: &str = "cmd";
+
+#[cfg(target_family = "unix")]
+pub const DEFAULT_SHELL_ARG: &str = "-c";
+#[cfg(target_family = "windows")]
+pub const DEFAULT_SHELL_ARG: &str = "/c";
+
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: &str = "80";
 pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
