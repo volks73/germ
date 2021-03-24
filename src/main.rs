@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use atty::Stream;
-use germ::asciicast::{Asciicast, Env};
+use germ::asciicast::Asciicast;
 use germ::sequence::{Command, Sequence, Timings, DEFAULT_PROMPT};
 use std::fs::File;
 use std::io;
@@ -229,7 +229,7 @@ impl Cli {
 
     fn append_arguments(&self, sequence: &mut Sequence, input: &str) -> Result<()> {
         let mut outputs = if self.outputs.is_empty() {
-            let output = process::Command::new(Env::default().shell())
+            let output = process::Command::new(self.asciicast.header.env.shell())
                 .args(&["-c", input])
                 .output()?;
             vec![std::str::from_utf8(&output.stdout)?.to_owned()]
@@ -294,9 +294,10 @@ impl Cli {
                                     .map(String::from)
                                     .collect()
                             } else {
-                                let output = process::Command::new(Env::default().shell())
-                                    .args(&["-c", &input])
-                                    .output()?;
+                                let output =
+                                    process::Command::new(self.asciicast.header.env.shell())
+                                        .args(&["-c", &input])
+                                        .output()?;
                                 stdout.write_all(&output.stdout)?;
                                 vec![std::str::from_utf8(&output.stdout)?.to_owned()]
                             };
