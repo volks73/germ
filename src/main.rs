@@ -151,7 +151,28 @@
 //!
 //! Note the single quotes around the output positional argument are needed
 //! because of the exclamation mark, `!`, which needs to be escaped in most
-//! shells.
+//! shells. These examples demonstrate creating simple asciicast formatted
+//! output from command line specified input and outputs but printing to stdout
+//! is not very useful since the asciinema ecosystem uses asciicast files as
+//! input and output. Thus, the previous two examples can be modified to save to
+//! an asciicast file either using [redirection] or the `-o,--output-file` option.
+//!
+//! ```sh
+//! ~$ germ "echo 'Hello, World!'" > example1.cast
+//! ~$ germ -o example2.cast "echo 'Hello, world!'" "'Hello, World!'"
+//! ~$ ls
+//! example1.cast  example2.cast
+//! ~$
+//! ```
+//!
+//! Both of the cast files created in the above example can be replayed using
+//! the `asciinema play example1.cast` or `asciinema play example2.cast`
+//! commands if the asciinema application is installed. The cast files can be
+//! uploaded to [asciinema.org] using the `asciinema upload example1.cast` and
+//! `asciinema upload example2.cast` commands. Currently, the asciinema
+//! application does not accept input via stdin. The file extension does _not_
+//! need to be `.cast`. Any file extension can be used, but `.cast` is the most
+//! common for asciicast files.
 //!
 //! ["Hello, World!" program]: https://en.wikipedia.org/wiki/%22Hello,_World!%22_program
 //! [`echo`]: https://en.wikipedia.org/wiki/Echo_(command)
@@ -159,6 +180,7 @@
 //! [JSON]: https://en.wikipedia.org/wiki/JSON
 //! [asciinema.org]: https://asciinema.org
 //! [asciinema player]: https://github.com/asciinema/asciinema-player
+//! [redirection]: https://en.wikipedia.org/wiki/Redirection_(computing)
 
 use anyhow::Result;
 use germ::Cli;
