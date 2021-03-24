@@ -3,8 +3,12 @@ use assert_cmd::Command;
 #[test]
 fn input_arg_with_one_outputs_arg() {
     let mut cmd = Command::cargo_bin("germ").unwrap();
-    let assert = cmd.args(&["echo Hello World", "Hello World"]).assert();
-    assert.success().stdout(r#"{"version":2,"width":80,"height":24,"env":{"SHELL":"/usr/bin/zsh","TERM":"xterm-256color"}}
+    let assert = cmd
+        .env("SHELL", "/bin/sh")
+        .args(&["echo Hello World", "Hello World"])
+        .assert();
+    assert.success().stdout(
+        r#"{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -25,5 +29,6 @@ fn input_arg_with_one_outputs_arg() {
 [2.16,"o","\r\n"]
 [2.16,"o","Hello World\r\n"]
 [3.16,"o",""]
-"#);
+"#,
+    );
 }
