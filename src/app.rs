@@ -201,7 +201,7 @@ impl Cli {
 
     fn read(&self) -> Result<Sequence> {
         if let Some(input_file) = &self.input_file {
-            self.read_from(BufReader::new(File::open(input_file)?))
+            self.read_from(File::open(input_file)?)
         } else if atty::is(Stream::Stdin) {
             Ok(Sequence::from(self.timings))
         } else {
@@ -210,24 +210,31 @@ impl Cli {
         }
     }
 
-    fn read_from<R: Read>(&self, r: R) -> Result<Sequence> {
-        match self.input_format {
-            InputFormats::Germ => serde_json::from_reader(r).map_err(anyhow::Error::from),
-            InputFormats::TermSheets => {
-                let termsheets: Vec<crate::termsheets::Command> = serde_json::from_reader(r)?;
-                let mut sequence = Sequence::from(self.timings);
-                sequence.append(
-                    &mut termsheets
-                        .into_iter()
-                        .map(|c| {
-                            let mut cmd = Command::from(c);
-                            cmd.set_prompt(&self.prompt);
-                            cmd
-                        })
-                        .collect(),
-                );
-                Ok(sequence)
+    fn read_from<R: Read>(&self, mut r: R) -> Result<Sequence> {
+        let mut buffer = Vec::new();
+        r.read_to_end(&mut buffer)?;
+        if !buffer.is_empty() {
+            match self.input_format {
+                InputFormats::Germ => serde_json::from_slice(&buffer).map_err(anyhow::Error::from),
+                InputFormats::TermSheets => {
+                    let termsheets: Vec<crate::termsheets::Command> =
+                        serde_json::from_slice(&buffer)?;
+                    let mut sequence = Sequence::from(self.timings);
+                    sequence.append(
+                        &mut termsheets
+                            .into_iter()
+                            .map(|c| {
+                                let mut cmd = Command::from(c);
+                                cmd.set_prompt(&self.prompt);
+                                cmd
+                            })
+                            .collect(),
+                    );
+                    Ok(sequence)
+                }
             }
+        } else {
+            Ok(Sequence::from(self.timings))
         }
     }
 
