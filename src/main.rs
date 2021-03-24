@@ -24,23 +24,35 @@ use std::path::PathBuf;
 use std::process;
 use structopt::clap::{self, value_t, ArgMatches};
 use structopt::StructOpt;
-use strum::{EnumString, EnumVariantNames, VariantNames};
+use strum::{Display, EnumString, EnumVariantNames, VariantNames};
 
 pub const DEFAULT_INTERACTIVE_PROMPT: &str = ">>> ";
 
-#[derive(Debug, EnumString, EnumVariantNames)]
+#[derive(Display, Debug, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "lowercase")]
 enum InputFormats {
     Germ,
     TermSheets,
 }
 
-#[derive(Debug, EnumString, EnumVariantNames)]
+impl Default for InputFormats {
+    fn default() -> Self {
+        Self::Germ
+    }
+}
+
+#[derive(Display, Debug, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "lowercase")]
 enum OutputFormats {
     Germ,
     TermSheets,
     Asciicast,
+}
+
+impl Default for OutputFormats {
+    fn default() -> Self {
+        Self::Asciicast
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -121,7 +133,7 @@ struct Cli {
         long,
         possible_values = InputFormats::VARIANTS,
         case_insensitive = true,
-        default_value = "germ",
+        default_value,
         value_name = "format",
         env = "GERM_INPUT_FORMAT"
     )]
@@ -139,7 +151,7 @@ struct Cli {
         long,
         possible_values = OutputFormats::VARIANTS,
         case_insensitive = true,
-        default_value = "asciicast",
+        default_value,
         default_value_if("use-germ-format", None, "germ"),
         value_name = "format",
         env = "GERM_OUTPUT_FORMAT"

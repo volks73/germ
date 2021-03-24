@@ -26,7 +26,6 @@ use strum::{EnumString, EnumVariantNames, VariantNames};
 
 pub const VERSION: usize = 2;
 pub const DEFAULT_HEIGHT: &str = "24";
-
 pub const DEFAULT_SHELL: &str = "/bin/sh";
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: &str = "80";
