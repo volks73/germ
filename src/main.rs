@@ -169,6 +169,58 @@
 //! need to be `.cast`. Any file extension can be used, but `.cast` is the most
 //! common for asciicast files.
 //!
+//! Previous examples demonstrated creating an asciicast file from a single
+//! input with zero or more outputs, but asciicast files based on multiple
+//! inputs and their respective outputs can be created in a variety of ways. All
+//! methods for creating multi-input cast files utilize the `germ` output
+//! format, which can be selected using the `-O,--output-format` option or the
+//! `-G` flag as a shortcut for `-O germ` because germ does not support parsing
+//! asciicast files. Germ is only capable of creating/writing asciicast files.
+//! An example of outputting germ's JSON-based format for sequences of inputs
+//! and their respective outputs can be seen in the following:
+//!
+//! ```sh
+//! ~$ germ --output-format germ "echo 'Hello, World!'"
+//! {"version":1,"timings":{"begin":0.0,"end":1.0,"type_start":750,"type_char":35,"type_submit":350,"output_line":500,"speed":1.0},"commands":[{"prompt":"$ ","input":"echo 'Hello, World!'","outputs":["Hello, World!\n"]}]}
+//! ```
+//!
+//! which is not very readable by a human, so let's pipe stdout from the germ
+//! application into the stdin for the [jq] application to make the JSON more
+//! human readable:
+//!
+//! ```sh
+//! ~$ germ --output-format germ "echo 'Hello, World!'" | jq
+//! {
+//!   "version": 1,
+//!   "timings": {
+//!     "begin": 0,
+//!     "end": 1,
+//!     "type_start": 750,
+//!     "type_char": 35,
+//!     "type_submit": 350,
+//!     "output_line": 500,
+//!     "speed": 1
+//!   },
+//!   "commands": [
+//!     {
+//!       "prompt": "$ ",
+//!       "input": "echo 'Hello, World!'",
+//!       "outputs": [
+//!         "Hello, World!\n"
+//!       ]
+//!     }
+//!   ]
+//! }
+//! ```
+//!
+//! The JSON-based germ sequence format contains timing information for
+//! generating a cast file as well as a list or array of all inputs and their
+//! respective outputs. Germ is capable of reading, modifying, and writing
+//! JSON-based sequence format. Furthermore, while asciinema does not read from
+//! stdin, the germ application is capable of reading from stdin. The
+//! combination of all of these features can be used to create multi-input cast
+//! files.
+//!
 //! [asciinema]: https://asciinema.org
 //! [TermSheets]: https://neatsoftware.github.io/term-sheets/
 //! [Termyanl]: https://github.com/ines/termynal
@@ -180,6 +232,7 @@
 //! [asciinema.org]: https://asciinema.org
 //! [asciinema player]: https://github.com/asciinema/asciinema-player
 //! [redirection]: https://en.wikipedia.org/wiki/Redirection_(computing)
+//! [jq]: https://stedolan.github.io/jq/
 
 use anyhow::Result;
 use germ::Cli;
