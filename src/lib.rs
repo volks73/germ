@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod asciicast;
-pub mod sequence;
-pub mod termsheets;
+pub use crate::app::Cli;
+
+mod app;
+mod asciicast;
+mod sequence;
+mod termsheets;

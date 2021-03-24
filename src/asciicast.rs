@@ -30,7 +30,6 @@ pub const DEFAULT_SHELL: &str = "/bin/sh";
 pub const DEFAULT_TERM: &str = "xterm-256color";
 pub const DEFAULT_WIDTH: &str = "80";
 pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
-pub const MILLISECONDS_UNITS: &str = "ms";
 pub const SHELL_VAR_NAME: &str = "SHELL";
 pub const TERM_VAR_NAME: &str = "TERM";
 
@@ -82,16 +81,6 @@ pub struct Env {
     )]
     #[serde(skip)]
     pub execute_string_flag: ExecuteStringFlags,
-}
-
-impl Env {
-    pub fn shell(&self) -> &str {
-        &self.shell
-    }
-
-    pub fn term(&self) -> &str {
-        &self.term
-    }
 }
 
 impl Default for Env {
@@ -249,11 +238,6 @@ impl Asciicast {
         self
     }
 
-    pub fn append(&mut self, events: &mut Vec<Event>) -> &mut Self {
-        self.events.append(events);
-        self
-    }
-
     pub fn append_from(&mut self, sequence: &Sequence) -> &mut Self {
         let start_delay = sequence
             .iter()
@@ -315,10 +299,6 @@ impl Asciicast {
             .speed(timings.speed)
             .into_seconds();
         start_delay + input_time + outputs_time
-    }
-
-    pub fn events(&self) -> &Vec<Event> {
-        &self.events
     }
 
     pub fn write_to<W: Write>(&mut self, mut writer: W) -> Result<()> {
