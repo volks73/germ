@@ -72,3 +72,10 @@ fn input_arg_only_with_germ_output_format_works() {
         .assert();
     assert.success().stdout(HELLO_WORLD_GERM_OUTPUT);
 }
+
+#[test]
+fn input_arg_only_with_germ_output_format_shortcut_works() {
+    let mut cmd = test_cmd();
+    let assert = cmd.arg("-G").arg("echo Hello World").assert();
+    assert.success().stdout(HELLO_WORLD_GERM_OUTPUT);
+}
