@@ -1,6 +1,6 @@
 # <em>G</em>enerate t<em>ERM</em>inal: An application to generate terminal session recordings without rehearsing or recording
 
-This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from the progression of "generate terminal" to "genterm" to "gterm" to "germ". This is heavily inpsired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
+This is a command line application for generating terminal session recording files, such as [asciinema]'s [asciicast files], from a payload of inputs and outputs instead of recording a terminal session. The name comes from the progression of "generate terminal" to "genterm" to "gterm" to "germ". This is heavily inspired by the [TermSheets] web application, which creates animated terminal presentations from a simple JSON schema. According to the TermSheets's creator:
 
 >...Other solutions usually involve recording a live screen. I wanted a way to simply provide a payload of instructions so I didn't have to rehearse my typing and wait for network output...
 
@@ -37,7 +37,7 @@ Start a terminal and then execute the following commands:
 
 ``` sh
 ~$ germ "echo 'Hello World'" "Hello World"
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -63,7 +63,7 @@ Start a terminal and then execute the following commands:
 
 ``` sh
 ~$ germ -G "echo 'Hello World'" "Hello World" | germ -G "echo 'Hello World Again'" "Hello World Again" | germ
-{"version":2,"width":188,"height":55,"timestamp":1615925818,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -127,7 +127,7 @@ Start a terminal and then execute the following commands:
 }
 ~$ germ -G "echo 'Hello World'" "Hello World" > commands.json
 ~$ germ < commands.json
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -150,7 +150,7 @@ Start a terminal and then execute the following commands:
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
 ~$ cat commands.json | germ
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -173,7 +173,7 @@ Start a terminal and then execute the following commands:
 [2.23,"o","\r\n"]
 [2.23,"o","Hello World\r\n"]
 ~$ germ -i commands.json
-{"version":2,"width":188,"height":55,"timestamp":1615856410,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -199,7 +199,7 @@ Start a terminal and then execute the following commands:
 
 ``` sh
 germ -p "`printf '\u001b[32m$\u001b[39m '`" "echo 'Hello World'" "Hello World"
-{"version":2,"width":188,"height":55,"timestamp":1615946038,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","\u001b[32m$ \u001b[39m"]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -242,7 +242,7 @@ World Hello
 >>> "echo Hello World Again"
 Hello World Again
 >>> --print
-{"version":2,"width":188,"height":55,"timestamp":1615946740,"env":{"SHELL":"/usr/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
