@@ -4,7 +4,7 @@ use assert_fs::TempDir;
 
 const TEST_SHELL: &str = "/bin/sh";
 const TEST_TERM: &str = "xterm-256color";
-const HELLO_WORLD_OUTPUT: &str = r#"{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
+const HELLO_WORLD_ASCIICAST_OUTPUT: &str = r#"{"version":2,"width":80,"height":24,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"}}
 [0.0,"o","$ "]
 [0.75,"o","e"]
 [0.785,"o","c"]
@@ -26,6 +26,7 @@ const HELLO_WORLD_OUTPUT: &str = r#"{"version":2,"width":80,"height":24,"env":{"
 [2.16,"o","Hello World\r\n"]
 [3.16,"o",""]
 "#;
+const HELLO_WORLD_GERM_OUTPUT: &str = r#"{"version":1,"timings":{"begin":0.0,"end":1.0,"type_start":750,"type_char":35,"type_submit":350,"output_line":500,"speed":1.0},"commands":[{"prompt":"$ ","input":"echo Hello World","outputs":["Hello World\n"]}]}"#;
 
 fn test_cmd() -> Command {
     let mut cmd = Command::cargo_bin("germ").unwrap();
@@ -37,14 +38,14 @@ fn test_cmd() -> Command {
 fn input_arg_with_no_outputs_arg_works() {
     let mut cmd = test_cmd();
     let assert = cmd.arg("echo Hello World").assert();
-    assert.success().stdout(HELLO_WORLD_OUTPUT);
+    assert.success().stdout(HELLO_WORLD_ASCIICAST_OUTPUT);
 }
 
 #[test]
 fn input_arg_with_one_outputs_arg_works() {
     let mut cmd = test_cmd();
     let assert = cmd.args(&["echo Hello World", "Hello World"]).assert();
-    assert.success().stdout(HELLO_WORLD_OUTPUT);
+    assert.success().stdout(HELLO_WORLD_ASCIICAST_OUTPUT);
 }
 
 #[test]
@@ -58,5 +59,16 @@ fn output_file_works() {
         .args(&["echo Hello World", "Hello World"])
         .assert();
     assert.success();
-    output_file.assert(HELLO_WORLD_OUTPUT);
+    output_file.assert(HELLO_WORLD_ASCIICAST_OUTPUT);
+}
+
+#[test]
+fn input_arg_only_with_germ_output_format_works() {
+    let mut cmd = test_cmd();
+    let assert = cmd
+        .arg("--output-format")
+        .arg("germ")
+        .arg("echo Hello World")
+        .assert();
+    assert.success().stdout(HELLO_WORLD_GERM_OUTPUT);
 }
