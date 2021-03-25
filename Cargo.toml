@@ -27,7 +27,9 @@ structopt = "0.3"
 strum = { version = "0.20", features = ["derive"] }
 
 [dev-dependencies]
-assert_cmd = "1" 
+assert_cmd = "1"
+assert_fs = "1"
+predicates = "1"
 
 [badges]
 is-it-maintained-issue-resolution = { repository = "volks73/germ" }

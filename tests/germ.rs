@@ -1,4 +1,6 @@
 use assert_cmd::Command;
+use assert_fs::prelude::*;
+use assert_fs::TempDir;
 
 const TEST_SHELL: &str = "/bin/sh";
 const TEST_TERM: &str = "xterm-256color";
@@ -26,7 +28,7 @@ const HELLO_WORLD_OUTPUT: &str = r#"{"version":2,"width":80,"height":24,"env":{"
 "#;
 
 #[test]
-fn input_arg_with_no_outputs_arg() {
+fn input_arg_with_no_outputs_arg_works() {
     let mut cmd = Command::cargo_bin("germ").unwrap();
     let assert = cmd
         .env("SHELL", TEST_SHELL)
@@ -37,7 +39,7 @@ fn input_arg_with_no_outputs_arg() {
 }
 
 #[test]
-fn input_arg_with_one_outputs_arg() {
+fn input_arg_with_one_outputs_arg_works() {
     let mut cmd = Command::cargo_bin("germ").unwrap();
     let assert = cmd
         .env("SHELL", TEST_SHELL)
@@ -45,4 +47,20 @@ fn input_arg_with_one_outputs_arg() {
         .args(&["echo Hello World", "Hello World"])
         .assert();
     assert.success().stdout(HELLO_WORLD_OUTPUT);
+}
+
+#[test]
+fn output_file_works() {
+    let tmp_dir = TempDir::new().unwrap();
+    let output_file = tmp_dir.child("test.cast");
+    let mut cmd = Command::cargo_bin("germ").unwrap();
+    let assert = cmd
+        .env("SHELL", TEST_SHELL)
+        .env("TERM", TEST_TERM)
+        .arg("-o")
+        .arg(output_file.path())
+        .args(&["echo Hello World", "Hello World"])
+        .assert();
+    assert.success();
+    output_file.assert(HELLO_WORLD_OUTPUT);
 }
