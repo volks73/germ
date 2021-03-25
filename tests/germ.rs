@@ -27,25 +27,23 @@ const HELLO_WORLD_OUTPUT: &str = r#"{"version":2,"width":80,"height":24,"env":{"
 [3.16,"o",""]
 "#;
 
+fn test_cmd() -> Command {
+    let mut cmd = Command::cargo_bin("germ").unwrap();
+    cmd.env("SHELL", TEST_SHELL).env("TERM", TEST_TERM);
+    cmd
+}
+
 #[test]
 fn input_arg_with_no_outputs_arg_works() {
-    let mut cmd = Command::cargo_bin("germ").unwrap();
-    let assert = cmd
-        .env("SHELL", TEST_SHELL)
-        .env("TERM", TEST_TERM)
-        .arg("echo Hello World")
-        .assert();
+    let mut cmd = test_cmd();
+    let assert = cmd.arg("echo Hello World").assert();
     assert.success().stdout(HELLO_WORLD_OUTPUT);
 }
 
 #[test]
 fn input_arg_with_one_outputs_arg_works() {
-    let mut cmd = Command::cargo_bin("germ").unwrap();
-    let assert = cmd
-        .env("SHELL", TEST_SHELL)
-        .env("TERM", TEST_TERM)
-        .args(&["echo Hello World", "Hello World"])
-        .assert();
+    let mut cmd = test_cmd();
+    let assert = cmd.args(&["echo Hello World", "Hello World"]).assert();
     assert.success().stdout(HELLO_WORLD_OUTPUT);
 }
 
@@ -53,10 +51,8 @@ fn input_arg_with_one_outputs_arg_works() {
 fn output_file_works() {
     let tmp_dir = TempDir::new().unwrap();
     let output_file = tmp_dir.child("test.cast");
-    let mut cmd = Command::cargo_bin("germ").unwrap();
+    let mut cmd = test_cmd();
     let assert = cmd
-        .env("SHELL", TEST_SHELL)
-        .env("TERM", TEST_TERM)
         .arg("-o")
         .arg(output_file.path())
         .args(&["echo Hello World", "Hello World"])
