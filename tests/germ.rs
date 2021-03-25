@@ -35,7 +35,7 @@ fn test_cmd() -> Command {
 }
 
 #[test]
-fn input_arg_with_no_outputs_arg_works() {
+fn input_arg_only_works() {
     let mut cmd = test_cmd();
     let assert = cmd.arg("echo Hello World").assert();
     assert.success().stdout(HELLO_WORLD_ASCIICAST_OUTPUT);
@@ -63,7 +63,7 @@ fn output_file_works() {
 }
 
 #[test]
-fn input_arg_only_with_germ_output_format_works() {
+fn germ_output_format_works() {
     let mut cmd = test_cmd();
     let assert = cmd
         .arg("--output-format")
@@ -74,7 +74,7 @@ fn input_arg_only_with_germ_output_format_works() {
 }
 
 #[test]
-fn input_arg_only_with_germ_output_format_shortcut_works() {
+fn germ_output_format_shortcut_works() {
     let mut cmd = test_cmd();
     let assert = cmd.arg("-G").arg("echo Hello World").assert();
     assert.success().stdout(HELLO_WORLD_GERM_OUTPUT);
