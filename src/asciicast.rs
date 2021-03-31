@@ -16,7 +16,7 @@
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::sequence::{Command, Sequence, Timings};
+use crate::sequence::{Command, Sequence, Timings, SECONDS_UNITS};
 use std::env;
 use std::fmt;
 use std::io::Write;
@@ -126,20 +126,30 @@ pub struct Header {
     )]
     pub height: usize,
 
+    /// The UNIX timestamp when the recording was started.
+    ///
+    /// This is the number of seconds since the UNIX EPOCH.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(skip)]
+    #[structopt(long, value_name = SECONDS_UNITS)]
     pub timestamp: Option<u64>,
 
+    /// The length of the recording if known ahead of time.
+    ///
+    /// The value is in seconds.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(skip)]
+    #[structopt(long, value_name = SECONDS_UNITS)]
     pub duration: Option<f64>,
 
+    /// The idle time limit.
+    ///
+    /// The value is in seconds.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(skip)]
+    #[structopt(long, value_name = SECONDS_UNITS)]
     pub idle_time_limit: Option<f64>,
 
+    /// The command executed for the recording.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(skip)]
+    #[structopt(long, value_name = "cmd")]
     pub command: Option<String>,
 
     /// The title for the asciicast file.
