@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use serde::Serialize;
 
 use crate::sequence::{Command, Sequence, Timings, SECONDS_UNITS};
@@ -32,13 +32,6 @@ pub const DEFAULT_WIDTH: &str = "80";
 pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 pub const SHELL_VAR_NAME: &str = "SHELL";
 pub const TERM_VAR_NAME: &str = "TERM";
-
-pub fn now() -> Option<u64> {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|d| d.as_secs())
-}
 
 #[derive(Debug, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "lowercase")]
@@ -135,9 +128,10 @@ pub struct Header {
 
     /// The UNIX timestamp when the recording was started.
     ///
-    /// This is the number of seconds since the UNIX EPOCH.
+    /// This is the number of seconds since the UNIX EPOCH. If the value is
+    /// "now", then the current UNIX timestamp will be used.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long, value_name = SECONDS_UNITS)]
+    #[structopt(long, value_name = SECONDS_UNITS, parse(try_from_str = parse_timestamp))]
     pub timestamp: Option<u64>,
 
     /// The length of the recording if known ahead of time.
@@ -189,7 +183,7 @@ impl Default for Header {
             version: VERSION,
             width: DEFAULT_WIDTH.parse().expect("Default usize"),
             height: DEFAULT_HEIGHT.parse().expect("Default usize"),
-            timestamp: now(),
+            timestamp: None,
             duration: None,
             idle_time_limit: None,
             command: None,
@@ -365,5 +359,15 @@ impl SecondsConversions for f64 {
 
     fn into_milliseconds(self) -> Self::Output {
         self * MILLISECONDS_IN_A_SECOND
+    }
+}
+
+fn parse_timestamp(src: &str) -> Result<u64> {
+    match src.to_lowercase().as_ref() {
+        "now" => SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .map_err(Error::from),
+        _ => src.parse().map_err(Error::from),
     }
 }
