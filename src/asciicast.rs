@@ -33,6 +33,13 @@ pub const MILLISECONDS_IN_A_SECOND: f64 = 1000.0;
 pub const SHELL_VAR_NAME: &str = "SHELL";
 pub const TERM_VAR_NAME: &str = "TERM";
 
+pub fn now() -> Option<u64> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_secs())
+}
+
 #[derive(Debug, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "lowercase")]
 pub enum ExecuteStringFlags {
@@ -182,10 +189,7 @@ impl Default for Header {
             version: VERSION,
             width: DEFAULT_WIDTH.parse().expect("Default usize"),
             height: DEFAULT_HEIGHT.parse().expect("Default usize"),
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .ok()
-                .map(|d| d.as_secs()),
+            timestamp: now(),
             duration: None,
             idle_time_limit: None,
             command: None,
