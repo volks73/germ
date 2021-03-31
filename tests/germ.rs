@@ -1,6 +1,7 @@
 use assert_cmd::Command;
 use assert_fs::prelude::*;
 use assert_fs::TempDir;
+use predicates::prelude::*;
 
 const TEST_SHELL: &str = "/bin/sh";
 const TEST_TERM: &str = "xterm-256color";
@@ -78,4 +79,30 @@ fn germ_output_format_shortcut_works() {
     let mut cmd = test_cmd();
     let assert = cmd.arg("-G").arg("echo Hello World").assert();
     assert.success().stdout(HELLO_WORLD_GERM_OUTPUT);
+}
+
+#[test]
+fn germ_timestamp_works() {
+    let mut cmd = test_cmd();
+    let assert = cmd
+        .arg("--timestamp")
+        .arg("123456789")
+        .arg("echo Hello World")
+        .assert();
+    assert
+        .success()
+        .stdout(predicate::str::contains(r#""timestamp":123456789"#));
+}
+
+#[test]
+fn germ_timestamp_now_works() {
+    let mut cmd = test_cmd();
+    let assert = cmd
+        .arg("--timestamp")
+        .arg("now")
+        .arg("echo Hello World")
+        .assert();
+    assert
+        .success()
+        .stdout(predicate::str::contains("timestamp"));
 }
