@@ -293,7 +293,7 @@ impl Cli {
                     } else if matches.is_present("warranty") {
                         print_warranty();
                     } else if matches.is_present("print") {
-                        self.write_to(&mut stdout, &sequence)?;
+                        self.write_to(&mut stdout, sequence)?;
                         if !matches!(self.output_format, OutputFormats::Asciicast) {
                             stdout.write_all(b"\n")?;
                         }
@@ -313,7 +313,7 @@ impl Cli {
                                     .map(String::from)
                                     .collect()
                             } else {
-                                let output = self.execute_cmd(&input)?;
+                                let output = self.execute_cmd(input)?;
                                 stdout.write_all(&output.stdout)?;
                                 vec![std::str::from_utf8(&output.stdout)?.to_owned()]
                             };
@@ -428,7 +428,7 @@ impl Cli {
 
     fn execute_cmd(&self, input: &str) -> Result<process::Output> {
         process::Command::new(&self.asciicast.header.env.shell)
-            .args(&[
+            .args([
                 &format!("{}", self.asciicast.header.env.execute_string_flag),
                 input,
             ])
