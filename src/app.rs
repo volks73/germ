@@ -358,9 +358,7 @@ impl Cli {
                 serde_json::to_writer(&mut writer, &termsheets)?;
             }
             OutputFormats::Asciicast => {
-                self.asciicast
-                    .append_from(&sequence)
-                    .write_to(&mut writer)?;
+                self.asciicast.append_from(sequence).write_to(&mut writer)?;
             }
         }
         Ok(())
