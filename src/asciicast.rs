@@ -227,7 +227,7 @@ impl Event {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Default, StructOpt)]
 pub struct Asciicast {
     #[structopt(flatten)]
     pub header: Header,
@@ -315,16 +315,6 @@ impl Asciicast {
             event.write_to(&mut writer)?;
         }
         Ok(())
-    }
-}
-
-impl Default for Asciicast {
-    fn default() -> Self {
-        Self {
-            header: Header::default(),
-            events: Vec::new(),
-            stdin: false,
-        }
     }
 }
 
