@@ -65,6 +65,7 @@ impl Default for OutputFormats {
     clap::AppSettings::NextLineHelp]),
     usage("[FLAGS] [OPTIONS] [INPUT] [OUTPUTS...]")
 )]
+#[allow(dead_code)]
 struct Interactive {
     #[structopt(flatten)]
     cli: Cli,
